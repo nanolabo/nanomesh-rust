@@ -1,4 +1,5 @@
 use std::ops::*;
+use assert_approx_eq::*;
 
 #[derive(Debug)]
 pub struct Vector3 {
@@ -126,5 +127,22 @@ mod tests {
         let c = Vector3 { x: -3.0, y: -18.0, z: -13.0 };
         assert_eq!(&a ^ &b, c);
         assert_ne!(&a ^ &b, a);
+    }
+
+    #[test]
+    fn magnitude() {
+        assert_eq!(Vector3 { x: 0., y: 0., z: 0. }.magnitude(), 0.);
+        assert_eq!(Vector3 { x: 1., y: 0., z: 0. }.magnitude(), 1.);
+        assert_eq!(Vector3 { x: -1., y: 0., z: 0. }.magnitude(), 1.);
+        assert_eq!(Vector3 { x: 4., y: -5., z: 6. }.magnitude(), 8.774964387392123);
+    }
+
+    #[test]
+    fn normalize() {
+        let a = Vector3 { x: 10., y: 0., z: 0. };
+        let b = Vector3 { x: 1.25, y: -520., z: 12. };
+        let c = Vector3 { x: 1., y: 0., z: 0. };
+        assert_eq!(a.normalize(), c);
+        assert_approx_eq!(b.normalize().magnitude(), 1., f64::EPSILON);
     }
 }

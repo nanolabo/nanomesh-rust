@@ -3,14 +3,15 @@ use crate::Vector3;
 pub struct ConnectedMesh {
     positions: Vec<Vector3>,
     nodes: Vec<Node>,
-    faceCount: u32,
+    face_count: u32,
 }
 
 impl ConnectedMesh {
-    pub fn Decimate(&mut self) {
+    pub fn decimate(&mut self) {
         let v1 = &self.positions[0];
         let v2 = &self.positions[1];
-        self.positions.push(v1 ^ v2);
+        let product = v1 ^ v2;
+        self.positions.push(product);
     }
 }
 
@@ -22,7 +23,7 @@ struct Node {
 }
 
 impl Node {
-    pub fn MarkRemoved(&mut self) {
+    pub fn mark_removed(&mut self) {
         self.position = 10;
     }
 }
