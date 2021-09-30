@@ -1,5 +1,4 @@
 use std::ops::*;
-use assert_approx_eq::*;
 
 #[derive(Debug)]
 pub struct Vector3 {
@@ -10,11 +9,19 @@ pub struct Vector3 {
 
 impl Vector3
 {
-    fn magnitude(&self) -> f64 {
+    pub fn new(x: f64, y: f64, z: f64) -> Self {
+        return Vector3 { 
+            x: x,
+            y: y,
+            z: z
+        }
+    }
+
+    pub fn magnitude(&self) -> f64 {
         return (self * self).sqrt();
     }
 
-    fn normalize(&self) -> Vector3
+    pub fn normalized(&self) -> Vector3
     {
         let magnitude = self.magnitude();
         return self / magnitude;
@@ -83,6 +90,7 @@ impl PartialEq for Vector3 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use assert_approx_eq::*;
 
     #[test]
     fn add() {
@@ -142,7 +150,7 @@ mod tests {
         let a = Vector3 { x: 10., y: 0., z: 0. };
         let b = Vector3 { x: 1.25, y: -520., z: 12. };
         let c = Vector3 { x: 1., y: 0., z: 0. };
-        assert_eq!(a.normalize(), c);
-        assert_approx_eq!(b.normalize().magnitude(), 1., f64::EPSILON);
+        assert_eq!(a.normalized(), c);
+        assert_approx_eq!(b.normalized().magnitude(), 1., f64::EPSILON);
     }
 }
