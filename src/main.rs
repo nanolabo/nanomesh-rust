@@ -1,13 +1,16 @@
 #![allow(dead_code)]
 
-mod data;
+mod base;
 mod utils;
+mod mesh;
 
-use crate::data::*;
+use crate::base::*;
+use crate::mesh::*;
 
 use std::time::Instant;
 
 fn main() {
+
     let now = Instant::now();
     let mut r = 0.0;
     let mut v = 0.0;
