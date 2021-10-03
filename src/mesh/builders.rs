@@ -124,6 +124,33 @@ impl Into<UnsafeMesh> for SharedMesh {
     }
 }
 
+macro_rules! loop_relatives {
+    ($node_index:expr, $nodes:expr, $exec:expr) => {{
+        let mut relative = $node_index;
+        loop {
+            $exec
+            relative = $nodes[relative as usize].relative;
+            if relative == $node_index {
+                break;
+            }
+        }
+    }};
+}
+
+macro_rules! loop_siblings {
+    ($node_index:expr, $nodes:expr, $exec:expr) => {{
+        let mut sibling = $node_index;
+        loop {
+            $exec
+            sibling = $nodes[sibling as usize].sibling;
+            if sibling == $node_index {
+                break;
+            }
+        }
+    }};
+}
+
+
 #[cfg(test)]
 mod tests {
 
@@ -156,5 +183,21 @@ mod tests {
         assert_eq!(connected_mesh.face_count, 2);
         assert_eq!(connected_mesh.positions.len(), 4);
         assert_eq!(connected_mesh.nodes.len(), 6);
+
+        connected_mesh.nodes[0].relative;
+
+        // Check relatives
+        for i in 0..6 {
+            let mut relatives = 0;
+            loop_relatives!(i, connected_mesh.nodes, { relatives = relatives + 1; });
+            assert_eq!(relatives, 3);
+        }
+
+        // Check siblings (connectivity)
+        for i in [[0, 2], [1, 1], [2, 2], [3, 2], [4, 2], [5, 1]] {
+            let mut siblings = 0;
+            loop_siblings!(i[0], connected_mesh.nodes, { siblings = siblings + 1; });
+            assert_eq!(siblings, i[1]);
+        }
     }
 }
