@@ -1,7 +1,7 @@
-impl From<&SharedMesh> for ConnectedMesh {
+impl<const A: usize> From<&SharedMesh> for ConnectedMesh<A> {
     fn from(shared_mesh: &SharedMesh) -> Self {
         let triangles = &shared_mesh.triangles;
-        let mut nodes = vec![Node{ position: 0, attribute: 0, relative: 0, sibling: 0 }; triangles.len()];
+        let mut nodes = vec![Node{ position: 0, attributes: [0; A], relative: 0, sibling: 0 }; triangles.len()];
         let mut vertex_to_nodes = HashMap::<i32, Vec<i32>, _>::with_hasher(
             BuildHasherDefault::<SimpleHasher>::default()
         );
@@ -9,34 +9,34 @@ impl From<&SharedMesh> for ConnectedMesh {
         let mut i: usize = 0;
         loop {
             {
-                let mut A = &mut nodes[i];
-                A.position = triangles[i];
-                A.attribute = triangles[i];
-                A.relative = (i as i32) + 1; // B
-                if !vertex_to_nodes.contains_key(&A.position) {
-                    vertex_to_nodes.insert(A.position, Vec::new());
+                let mut a = &mut nodes[i];
+                a.position = triangles[i];
+                a.attributes = [0; A];
+                a.relative = (i as i32) + 1; // B
+                if !vertex_to_nodes.contains_key(&a.position) {
+                    vertex_to_nodes.insert(a.position, Vec::new());
                 }
-                vertex_to_nodes.get_mut(&A.position).unwrap().push(i as i32);
+                vertex_to_nodes.get_mut(&a.position).unwrap().push(i as i32);
             }
             {
-                let mut B = &mut nodes[i + 1];
-                B.position = triangles[i + 1];
-                B.attribute = triangles[i + 1];
-                B.relative = (i as i32) + 2; // C
-                if !vertex_to_nodes.contains_key(&B.position) {
-                    vertex_to_nodes.insert(B.position, Vec::new());
+                let mut b = &mut nodes[i + 1];
+                b.position = triangles[i + 1];
+                b.attributes = [0; A];
+                b.relative = (i as i32) + 2; // C
+                if !vertex_to_nodes.contains_key(&b.position) {
+                    vertex_to_nodes.insert(b.position, Vec::new());
                 }  
-                vertex_to_nodes.get_mut(&B.position).unwrap().push((i as i32) + 1);
+                vertex_to_nodes.get_mut(&b.position).unwrap().push((i as i32) + 1);
             }
             {
-                let mut C = &mut nodes[i + 2];
-                C.position = triangles[i + 2];
-                C.attribute = triangles[i + 2];
-                C.relative = i as i32; // A
-                if !vertex_to_nodes.contains_key(&C.position) {
-                    vertex_to_nodes.insert(C.position, Vec::new());
+                let mut c = &mut nodes[i + 2];
+                c.position = triangles[i + 2];
+                c.attributes = [0; A];
+                c.relative = i as i32; // A
+                if !vertex_to_nodes.contains_key(&c.position) {
+                    vertex_to_nodes.insert(c.position, Vec::new());
                 }
-                vertex_to_nodes.get_mut(&C.position).unwrap().push((i as i32) + 2);
+                vertex_to_nodes.get_mut(&c.position).unwrap().push((i as i32) + 2);
             }
             face_count = face_count + 1;
 
@@ -65,19 +65,28 @@ impl From<&SharedMesh> for ConnectedMesh {
     }
 }
 
-impl Into<ConnectedMesh> for SharedMesh {
-    fn into(self) -> ConnectedMesh {
+impl<const A: usize> Into<ConnectedMesh<A>> for SharedMesh {
+    fn into(self) -> ConnectedMesh<A> {
         return ConnectedMesh::from(&self);
     }
 }
 
-impl From<&ConnectedMesh> for SharedMesh {
-    fn from(connected_mesh: &ConnectedMesh) -> Self {
-        return SharedMesh { positions: Vec::new(), triangles: Vec::new(), groups: Vec::new() };
+impl<const A: usize> From<&ConnectedMesh<A>> for SharedMesh {
+    fn from(connected_mesh: &ConnectedMesh<A>) -> Self {
+
+        let mut vertex_to_nodes = HashMap::<i32, Vec<i32>, _>::with_hasher(
+            BuildHasherDefault::<SimpleHasher>::default()
+        );
+
+        return SharedMesh {
+            positions: Vec::new(),
+            triangles: Vec::new(),
+            normals: None,
+            groups: Vec::new() };
     }
 }
 
-impl Into<SharedMesh> for ConnectedMesh {
+impl<const A: usize> Into<SharedMesh> for ConnectedMesh<A> {
     fn into(self) -> SharedMesh {
         return SharedMesh::from(&self);
     }
@@ -89,10 +98,10 @@ impl From<&SharedMesh> for UnsafeMesh {
             return UnsafeMesh {
                 positions_ptr: vec_to_ptr(&shared_mesh.positions),
                 positions_len: shared_mesh.positions.len() as i32,
-    
+                normals_ptr: vec_to_ptr(&Vec::new()),
+                normals_len: 0,
                 triangles_ptr: vec_to_ptr(&shared_mesh.triangles),
                 triangles_len: shared_mesh.triangles.len() as i32,
-    
                 groups_ptr: vec_to_ptr(&shared_mesh.groups),
                 groups_len: shared_mesh.positions.len() as i32,
             };
@@ -112,6 +121,7 @@ impl From<&UnsafeMesh> for SharedMesh {
             return SharedMesh {
                 positions: ptr_to_vec(unsafe_mesh.positions_ptr, unsafe_mesh.positions_len as usize),
                 triangles: ptr_to_vec(unsafe_mesh.triangles_ptr, unsafe_mesh.triangles_len as usize),
+                normals: None,
                 groups: ptr_to_vec(unsafe_mesh.groups_ptr, unsafe_mesh.groups_len as usize),
             };
         }
@@ -150,7 +160,6 @@ macro_rules! loop_siblings {
     }};
 }
 
-
 #[cfg(test)]
 mod tests {
 
@@ -177,8 +186,13 @@ mod tests {
         triangles.push(2);
         triangles.push(3);
 
-        let shared_mesh = SharedMesh { positions: positions, triangles: triangles, groups: Vec::new() };
-        let connected_mesh = ConnectedMesh::from(&shared_mesh);
+        let shared_mesh = SharedMesh { 
+            positions: positions,
+            triangles: triangles,
+            normals: None,
+            groups: Vec::new() 
+        };
+        let connected_mesh = ConnectedMesh::<0>::from(&shared_mesh);
 
         assert_eq!(connected_mesh.face_count, 2);
         assert_eq!(connected_mesh.positions.len(), 4);
