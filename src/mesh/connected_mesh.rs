@@ -18,6 +18,7 @@ pub struct Group {
     index_count: i32,
 }
 
+#[derive(Clone)]
 pub struct Node {
     position: i32,
     sibling: i32,
