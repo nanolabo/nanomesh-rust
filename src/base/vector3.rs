@@ -87,6 +87,12 @@ impl PartialEq for Vector3 {
     }
 }
 
+impl Default for Vector3 {
+    fn default() -> Self {
+        Vector3 { x: 0., y: 0., z: 0. }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

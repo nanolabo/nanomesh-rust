@@ -1,10 +1,14 @@
-pub struct ConnectedMesh<const A: usize> {
-    positions: Vec<Vector3>,
-    nodes: Vec<Node<A>>,
+pub struct ConnectedMesh {
+    nodes: Vec<Node>,
     face_count: u32,
+
+    positions: Vec<Vector3>,
+    normals: Vec<Vector3>,
+    // uv0: Vec<Vector3>,
+    // colors: Vec<Vector3>,
 }
 
-impl<const A: usize> ConnectedMesh<A> {    
+impl ConnectedMesh {    
     pub fn decimate(&mut self) {
         let v1 = &self.positions[0];
         let v2 = &self.positions[1];
@@ -19,15 +23,20 @@ pub struct Group {
 }
 
 #[derive(Clone)]
-pub struct Node<const A: usize> {
-    position: i32,
+pub struct Node {
     sibling: i32,
     relative: i32,
-    attributes: [i32; A],
+
+    position: i32,
+    normal: i32,
+    // uv0: i32,
+    // color: i32,
+
+    is_removed: bool,
 }
 
-// impl Node {
-//     pub fn mark_removed(&mut self) {
-//         self.position = 10;
-//     }
-// }
+impl Default for Node {
+    fn default() -> Self {
+        Node{ position: 0, normal: 0, relative: 0, sibling: 0, is_removed: false }
+    }
+}

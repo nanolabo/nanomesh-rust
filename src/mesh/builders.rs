@@ -1,7 +1,33 @@
-impl<const A: usize> From<&SharedMesh> for ConnectedMesh<A> {
+macro_rules! loop_relatives {
+    ($node_index:expr, $nodes:expr, $relative:ident, $exec:expr) => {{
+        let mut $relative = $node_index;
+        loop {
+            $exec
+            $relative = $nodes[$relative as usize].relative as usize;
+            if $relative == $node_index {
+                break;
+            }
+        }
+    }};
+}
+
+macro_rules! loop_siblings {
+    ($node_index:expr, $nodes:expr, $sibling:ident, $exec:expr) => {{
+        let mut $sibling = $node_index;
+        loop {
+            $exec
+            $sibling = $nodes[$sibling as usize].sibling as usize;
+            if $sibling == $node_index {
+                break;
+            }
+        }
+    }};
+}
+
+impl From<&SharedMesh> for ConnectedMesh {
     fn from(shared_mesh: &SharedMesh) -> Self {
         let triangles = &shared_mesh.triangles;
-        let mut nodes = vec![Node{ position: 0, attributes: [0; A], relative: 0, sibling: 0 }; triangles.len()];
+        let mut nodes = vec![Node::default(); triangles.len()];
         let mut vertex_to_nodes = HashMap::<i32, Vec<i32>, _>::with_hasher(
             BuildHasherDefault::<SimpleHasher>::default()
         );
@@ -11,7 +37,7 @@ impl<const A: usize> From<&SharedMesh> for ConnectedMesh<A> {
             {
                 let mut a = &mut nodes[i];
                 a.position = triangles[i];
-                a.attributes = [0; A];
+                a.normal = triangles[i];
                 a.relative = (i as i32) + 1; // B
                 if !vertex_to_nodes.contains_key(&a.position) {
                     vertex_to_nodes.insert(a.position, Vec::new());
@@ -21,7 +47,7 @@ impl<const A: usize> From<&SharedMesh> for ConnectedMesh<A> {
             {
                 let mut b = &mut nodes[i + 1];
                 b.position = triangles[i + 1];
-                b.attributes = [0; A];
+                b.normal = triangles[i + 1];
                 b.relative = (i as i32) + 2; // C
                 if !vertex_to_nodes.contains_key(&b.position) {
                     vertex_to_nodes.insert(b.position, Vec::new());
@@ -31,7 +57,7 @@ impl<const A: usize> From<&SharedMesh> for ConnectedMesh<A> {
             {
                 let mut c = &mut nodes[i + 2];
                 c.position = triangles[i + 2];
-                c.attributes = [0; A];
+                c.normal = triangles[i + 2];
                 c.relative = i as i32; // A
                 if !vertex_to_nodes.contains_key(&c.position) {
                     vertex_to_nodes.insert(c.position, Vec::new());
@@ -61,32 +87,66 @@ impl<const A: usize> From<&SharedMesh> for ConnectedMesh<A> {
             nodes[first_sibling as usize].sibling = previous_sibling;
         }
 
-        return ConnectedMesh { positions: shared_mesh.positions.clone(), nodes: nodes, face_count: face_count };
+        return ConnectedMesh { 
+            positions: shared_mesh.positions.clone(),
+            normals: shared_mesh.normals.clone(),
+            nodes: nodes,
+            face_count: face_count };
     }
 }
 
-impl<const A: usize> Into<ConnectedMesh<A>> for SharedMesh {
-    fn into(self) -> ConnectedMesh<A> {
+impl Into<ConnectedMesh> for SharedMesh {
+    fn into(self) -> ConnectedMesh {
         return ConnectedMesh::from(&self);
     }
 }
 
-impl<const A: usize> From<&ConnectedMesh<A>> for SharedMesh {
-    fn from(connected_mesh: &ConnectedMesh<A>) -> Self {
+impl From<&ConnectedMesh> for SharedMesh {
+    fn from(connected_mesh: &ConnectedMesh) -> Self {
 
-        let mut vertex_to_nodes = HashMap::<i32, Vec<i32>, _>::with_hasher(
-            BuildHasherDefault::<SimpleHasher>::default()
-        );
+        let mut per_vertex_map = HashMap::<[i32; 2], i32>::new();
+        
+        let mut triangles = Vec::<i32>::with_capacity((connected_mesh.face_count * 3) as usize);
+
+        for i in 0..connected_mesh.nodes.len() {
+            if connected_mesh.nodes[i].is_removed {
+                continue;
+            }
+            let key = [connected_mesh.nodes[i as usize].position, connected_mesh.nodes[i as usize].normal];
+            if per_vertex_map.contains_key(&key) {
+                continue;
+            }
+            loop_relatives!(i, connected_mesh.nodes, relative, {
+                let key = [connected_mesh.nodes[relative as usize].position, connected_mesh.nodes[relative as usize].normal];
+                if !per_vertex_map.contains_key(&key) {
+                    per_vertex_map.insert(key, per_vertex_map.len() as i32);
+                }
+                triangles.push(*per_vertex_map.get(&key).unwrap());
+            });
+        }
+
+        let mut positions = vec![Vector3::default(); per_vertex_map.len()];
+        for (key, value) in &per_vertex_map {
+            positions[*value as usize] = connected_mesh.positions[key[0] as usize];
+        }
+
+        let mut normals = Vec::new();
+        if connected_mesh.normals.len() > 0 {
+            normals = vec![Vector3::default(); per_vertex_map.len()];
+            for (key, value) in &per_vertex_map {
+                normals[*value as usize] = connected_mesh.normals[key[1] as usize];
+            }
+        }
 
         return SharedMesh {
-            positions: Vec::new(),
-            triangles: Vec::new(),
-            normals: None,
+            positions: positions,
+            normals: normals,
+            triangles: triangles,
             groups: Vec::new() };
     }
 }
 
-impl<const A: usize> Into<SharedMesh> for ConnectedMesh<A> {
+impl Into<SharedMesh> for ConnectedMesh {
     fn into(self) -> SharedMesh {
         return SharedMesh::from(&self);
     }
@@ -98,8 +158,8 @@ impl From<&SharedMesh> for UnsafeMesh {
             return UnsafeMesh {
                 positions_ptr: vec_to_ptr(&shared_mesh.positions),
                 positions_len: shared_mesh.positions.len() as i32,
-                normals_ptr: vec_to_ptr(&Vec::new()),
-                normals_len: 0,
+                normals_ptr: vec_to_ptr(&shared_mesh.normals),
+                normals_len: shared_mesh.normals.len() as i32,
                 triangles_ptr: vec_to_ptr(&shared_mesh.triangles),
                 triangles_len: shared_mesh.triangles.len() as i32,
                 groups_ptr: vec_to_ptr(&shared_mesh.groups),
@@ -121,7 +181,7 @@ impl From<&UnsafeMesh> for SharedMesh {
             return SharedMesh {
                 positions: ptr_to_vec(unsafe_mesh.positions_ptr, unsafe_mesh.positions_len as usize),
                 triangles: ptr_to_vec(unsafe_mesh.triangles_ptr, unsafe_mesh.triangles_len as usize),
-                normals: None,
+                normals: ptr_to_vec(unsafe_mesh.normals_ptr, unsafe_mesh.normals_len as usize),
                 groups: ptr_to_vec(unsafe_mesh.groups_ptr, unsafe_mesh.groups_len as usize),
             };
         }
@@ -132,32 +192,6 @@ impl Into<UnsafeMesh> for SharedMesh {
     fn into(self) -> UnsafeMesh {
         return UnsafeMesh::from(&self);
     }
-}
-
-macro_rules! loop_relatives {
-    ($node_index:expr, $nodes:expr, $exec:expr) => {{
-        let mut relative = $node_index;
-        loop {
-            $exec
-            relative = $nodes[relative as usize].relative;
-            if relative == $node_index {
-                break;
-            }
-        }
-    }};
-}
-
-macro_rules! loop_siblings {
-    ($node_index:expr, $nodes:expr, $exec:expr) => {{
-        let mut sibling = $node_index;
-        loop {
-            $exec
-            sibling = $nodes[sibling as usize].sibling;
-            if sibling == $node_index {
-                break;
-            }
-        }
-    }};
 }
 
 #[cfg(test)]
@@ -189,10 +223,11 @@ mod tests {
         let shared_mesh = SharedMesh { 
             positions: positions,
             triangles: triangles,
-            normals: None,
+            normals: Vec::new(),
             groups: Vec::new() 
         };
-        let connected_mesh = ConnectedMesh::<0>::from(&shared_mesh);
+
+        let connected_mesh = ConnectedMesh::from(&shared_mesh);
 
         assert_eq!(connected_mesh.face_count, 2);
         assert_eq!(connected_mesh.positions.len(), 4);
@@ -203,15 +238,50 @@ mod tests {
         // Check relatives
         for i in 0..6 {
             let mut relatives = 0;
-            loop_relatives!(i, connected_mesh.nodes, { relatives = relatives + 1; });
+            loop_relatives!(i, connected_mesh.nodes, relative, { relatives = relatives + 1; });
             assert_eq!(relatives, 3);
         }
 
         // Check siblings (connectivity)
         for i in [[0, 2], [1, 1], [2, 2], [3, 2], [4, 2], [5, 1]] {
             let mut siblings = 0;
-            loop_siblings!(i[0], connected_mesh.nodes, { siblings = siblings + 1; });
+            loop_siblings!(i[0], connected_mesh.nodes, sibling, { siblings = siblings + 1; });
             assert_eq!(siblings, i[1]);
+        }
+    }
+
+    #[test]
+    fn connected_mesh_to_shared_mesh() {
+
+        let mut positions = Vec::new();
+        // Build a square
+        positions.push(Vector3::new(0., 0., 0.));
+        positions.push(Vector3::new(1., 0., 0.));
+        positions.push(Vector3::new(1., 1., 0.));
+        positions.push(Vector3::new(0., 1., 0.));
+
+        let mut nodes = Vec::new();
+        nodes.push(Node { position: 0, normal: 0, sibling: 3, relative: 1, is_removed: false });
+        nodes.push(Node { position: 1, normal: 0, sibling: 1, relative: 2, is_removed: false }); // sibling is itself
+        nodes.push(Node { position: 2, normal: 0, sibling: 4, relative: 0, is_removed: false });
+        nodes.push(Node { position: 0, normal: 0, sibling: 0, relative: 4, is_removed: false });
+        nodes.push(Node { position: 2, normal: 0, sibling: 2, relative: 5, is_removed: false });
+        nodes.push(Node { position: 3, normal: 0, sibling: 5, relative: 3, is_removed: false }); // sibling is itself
+
+        let connected_mesh = ConnectedMesh {
+            positions: positions,
+            normals: Vec::new(),
+            nodes: nodes,
+            face_count: 2,
+        };
+
+        let shared_mesh = SharedMesh::from(&connected_mesh);
+
+        assert_eq!(shared_mesh.triangles.len(), 6);
+        assert_eq!(shared_mesh.positions.len(), 4);
+
+        for i in 0..4 {
+            assert!(shared_mesh.triangles.contains(&i));
         }
     }
 }

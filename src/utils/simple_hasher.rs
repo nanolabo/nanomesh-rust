@@ -33,6 +33,7 @@ impl Hasher for SimpleHasher {
         *self = SimpleHasher(load_u64_le(bytes, bytes.len()));
     }
     
+    #[inline]
     fn write_i32(&mut self, i: i32) {
         self.0 = i as u64;
     }
