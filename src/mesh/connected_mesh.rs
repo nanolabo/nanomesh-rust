@@ -42,24 +42,25 @@ impl ConnectedMesh {
         self.positions.push(product);
     }
 
-    fn collapse_edge(&mut self, node_index_A: i32, node_index_B: i32) {
+    fn collapse_edge(&mut self, node_index_a: i32, node_index_b: i32) {
 
-        let pos_A = self.nodes[node_index_A as usize].position;
-        let pos_B = self.nodes[node_index_B as usize].position;
+        let pos_a = self.nodes[node_index_a as usize].position;
+        let pos_b = self.nodes[node_index_b as usize].position;
 
-        debug_assert!(pos_A != pos_B);
+        debug_assert!(pos_a != pos_a);
 
-        loop_siblings!(node_index_A, self.nodes, sibling_of_A, {
+        loop_siblings!(node_index_a, self.nodes, sibling_of_a, {
+
             let mut is_face_touched = false;
             let mut face_edge_count = 0;
-            let mut node_index_C = -1;
+            let mut node_index_c = -1;
 
-            loop_relatives!(sibling_of_A, self.nodes, relative_of_A, {
-                let pos_C = self.nodes[relative_of_A as usize].position;
-                if pos_B == pos_C {
+            loop_relatives!(sibling_of_a, self.nodes, relative_of_a, {
+                let pos_c = self.nodes[relative_of_a as usize].position;
+                if pos_b == pos_c {
                     is_face_touched = true;
-                } else if pos_A != pos_C {
-                    node_index_C = relative_of_A;
+                } else if pos_a != pos_c {
+                    node_index_c = relative_of_a;
                 }
                 face_edge_count = face_edge_count + 1;
             });
@@ -67,18 +68,134 @@ impl ConnectedMesh {
             debug_assert!(face_edge_count == 3);
 
             if is_face_touched {
-                let pos_C = self.nodes[node_index_C as usize].position;
-                loop_relatives!(sibling_of_A, self.nodes, relative_of_A, {
-                    self.nodes[relative_of_A as usize].is_removed = true;
+                loop_relatives!(sibling_of_a, self.nodes, relative_of_a, {
+                    self.nodes[relative_of_a as usize].is_removed = true;
                 });
-                //let valid_node_at_C = reconnect_siblings(node_index_C);
+                let valid_node_at_c = self.reconnect_sibling(node_index_c);
+                //let pos_c = self.nodes[node_index_c as usize].position;
                 //update position_to_nodes
                 self.face_count = self.face_count - 1;
             }
         });
 
-        //let valid_node_at_A = reconnect_siblings(node_index_A, node_index_B, pos_A);
+        let valid_node_at_a = self.reconnect_siblings(node_index_a, node_index_b, pos_a);
         //update position_to_nodes
+    }
+
+    fn reconnect_siblings(&mut self, node_index_a: i32, node_index_b: i32, position: i32) -> i32 {
+        let mut last_valid = -1;
+        let mut first_valid = -1;
+
+        loop_siblings!(node_index_a, self.nodes, sibling, {
+
+            if self.nodes[sibling as usize].is_removed {
+                continue;
+            }
+            if first_valid == -1 {
+                first_valid = sibling;
+            }
+            if last_valid != -1 {
+                self.nodes[sibling as usize].sibling = sibling;
+                self.nodes[sibling as usize].position = position;
+            }
+            last_valid = sibling;
+        });
+
+        loop_siblings!(node_index_b, self.nodes, sibling, {
+
+            if self.nodes[sibling as usize].is_removed {
+                continue;
+            }
+            if first_valid == -1 {
+                first_valid = sibling;
+            }
+            if last_valid != -1 {
+                self.nodes[sibling as usize].sibling = sibling;
+                self.nodes[sibling as usize].position = position;
+            }
+            last_valid = sibling;
+        });
+
+        if last_valid == -1 {
+            return -1; // All siblings were removed
+        }
+
+        // Close the cloop
+        self.nodes[last_valid as usize].sibling = first_valid;
+        self.nodes[last_valid as usize].position = position;
+
+        return first_valid;
+    }
+
+    fn reconnect_sibling(&mut self, node_index: i32) -> i32 {
+        let mut last_valid = -1;
+        let mut first_valid = -1;
+        let mut position = -1;
+
+        loop_siblings!(node_index, self.nodes, sibling, {
+
+            if self.nodes[sibling as usize].is_removed {
+                continue;
+            }
+            if first_valid == -1 {
+                first_valid = sibling;
+                position = self.nodes[sibling as usize].position;
+            }
+            if last_valid != -1 {
+                self.nodes[sibling as usize].sibling = sibling;
+                self.nodes[sibling as usize].position = position;
+            }
+            last_valid = sibling;
+        });
+
+        if last_valid == -1 {
+            return -1; // All siblings were removed
+        }
+
+        // Close the cloop
+        self.nodes[last_valid as usize].sibling = first_valid;
+        self.nodes[last_valid as usize].position = position;
+
+        return first_valid;
+    }
+
+    fn get_edge_topo(&mut self, node_index_a: i32, node_index_b: i32) -> f64 {
+        let pos_b = self.nodes[node_index_b as usize].position;
+        let mut faces_attached = 0;
+        let mut attribute_at_a: i32 = -1;
+        let mut attribute_at_b: i32 = -1;
+        let mut edge_weight = 0.0;
+        
+        loop_siblings!(node_index_a, self.nodes, sibling_of_a, {
+            if self.nodes[sibling_of_a as usize].is_removed {
+                continue;
+            }
+            loop_relatives!(sibling_of_a, self.nodes, relative_of_a, {
+                let pos_c = self.nodes[relative_of_a as usize].position;
+                if pos_c == pos_b {
+                    faces_attached = faces_attached + 1;
+
+                    if self.normals.len() > 0 {
+                        if attribute_at_b != -1 && self.normals[attribute_at_b as usize] == self.normals[self.nodes[relative_of_a as usize].normal as usize] {
+                            edge_weight = edge_weight + 10.0
+                        }
+                        if attribute_at_a != -1 && self.normals[attribute_at_a as usize] == self.normals[self.nodes[sibling_of_a as usize].normal as usize] {
+                            edge_weight = edge_weight + 10.0
+                        }
+                    }
+
+                    attribute_at_b = self.nodes[relative_of_a as usize].normal;
+                    attribute_at_a = self.nodes[sibling_of_a as usize].normal;
+                }
+            });
+        });
+
+        // Check if border
+        if faces_attached < 2 {
+            edge_weight = edge_weight + 100.0;
+        }
+
+        return edge_weight;
     }
 }
 
