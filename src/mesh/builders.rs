@@ -1,29 +1,3 @@
-macro_rules! loop_relatives {
-    ($node_index:expr, $nodes:expr, $relative:ident, $exec:expr) => {{
-        let mut $relative = $node_index;
-        loop {
-            $exec
-            $relative = $nodes[$relative as usize].relative as usize;
-            if $relative == $node_index {
-                break;
-            }
-        }
-    }};
-}
-
-macro_rules! loop_siblings {
-    ($node_index:expr, $nodes:expr, $sibling:ident, $exec:expr) => {{
-        let mut $sibling = $node_index;
-        loop {
-            $exec
-            $sibling = $nodes[$sibling as usize].sibling as usize;
-            if $sibling == $node_index {
-                break;
-            }
-        }
-    }};
-}
-
 impl From<&SharedMesh> for ConnectedMesh {
     fn from(shared_mesh: &SharedMesh) -> Self {
         let triangles = &shared_mesh.triangles;
@@ -116,7 +90,7 @@ impl From<&ConnectedMesh> for SharedMesh {
             if per_vertex_map.contains_key(&key) {
                 continue;
             }
-            loop_relatives!(i, connected_mesh.nodes, relative, {
+            loop_relatives!(i as i32, connected_mesh.nodes, relative, {
                 let key = [connected_mesh.nodes[relative as usize].position, connected_mesh.nodes[relative as usize].normal];
                 if !per_vertex_map.contains_key(&key) {
                     per_vertex_map.insert(key, per_vertex_map.len() as i32);
