@@ -8,6 +8,16 @@ pub struct ConnectedMesh {
     // colors: Vec<Vector3>,
 }
 
+impl Default for ConnectedMesh {
+    fn default() -> ConnectedMesh {
+        ConnectedMesh { 
+            positions: Vec::new(),
+            normals: Vec::new(),
+            nodes: Vec::new(),
+            face_count: 0 }
+    }
+}
+
 macro_rules! loop_relatives {
     ($node_index:expr, $nodes:expr, $relative:ident, $exec:expr) => {{
         let mut $relative: i32 = $node_index;
@@ -34,12 +44,93 @@ macro_rules! loop_siblings {
     }};
 }
 
+use std::hash::Hash;
+use std::time::Instant;
+use priority_queue::PriorityQueue;
+
 impl ConnectedMesh {    
     pub fn decimate(&mut self) {
-        let v1 = &self.positions[0];
-        let v2 = &self.positions[1];
-        let product = v1 ^ v2;
-        self.positions.push(product);
+
+        use std::hash::Hasher;
+        pub struct EdgeHasher {
+            hash: u64,
+        }
+
+        impl Default for EdgeHasher {
+            fn default() -> EdgeHasher {
+                EdgeHasher { hash: 0 }
+            }
+        }
+
+        impl Hasher for EdgeHasher {
+            #[inline]
+            fn finish(&self) -> u64 {
+                self.hash
+            }
+            #[inline]
+            fn write(&mut self, _bytes: &[u8]) { 
+            }
+            #[inline]
+            fn write_i32(&mut self, i: i32) {
+                self.hash = self.hash + i as u64;
+            }
+        }
+
+        pub struct Edge {
+            node_a: Node,
+            node_b: Node,
+        }
+
+        impl Eq for Edge {
+
+        }
+        
+        impl PartialEq for Edge {
+            fn eq(&self, other: &Self) -> bool {
+                self.node_a.position == other.node_a.position
+             && self.node_b.position == other.node_b.position
+            }
+        }
+
+        impl Hash for Edge {
+            fn hash<H: Hasher>(&self, state: &mut H) {
+                self.node_a.position.hash(state);
+                self.node_b.position.hash(state);
+            }
+        }
+
+        let now = Instant::now();
+        //let mut btreemap = PriorityQueue::new();
+        let mut queue = PriorityQueue::with_hasher(
+            BuildHasherDefault::<EdgeHasher>::default()
+        );
+        const s: i32 = 1000000;
+        for i in 0..s {
+            queue.push(Edge {
+                node_a: Node { position: i, normal: 0, relative: 0, sibling: 0, is_removed: false },
+                node_b: Node { position: i + 10000000, normal: 0, relative: 0, sibling: 0, is_removed: false } }, i);
+        }
+        for i in 0..1000000 {
+            // Pop highest priority
+            //queue.pop(); 
+            // Update some
+
+            let item = Edge {
+                node_a: Node { position: i, normal: 1, relative: 0, sibling: 0, is_removed: false },
+                node_b: Node { position: i + 10000000, normal: 1, relative: 0, sibling: 0, is_removed: false } };
+
+            match queue.get_mut(&item) {
+                None => panic!(":cnon:"),
+                Some((item, prio)) =>  {
+                    item.node_a.normal = 2;
+                }
+            };
+            queue.change_priority(&item, i + 1);
+        }
+        println!("len={}", queue.len());
+        println!("ms={}", now.elapsed().as_millis());
+        println!("max={}", queue.peek().unwrap().1);
+        println!("normal={}", queue.peek().unwrap().0.node_a.normal);
     }
 
     fn collapse_edge(&mut self, node_index_a: i32, node_index_b: i32) {
@@ -219,6 +310,6 @@ pub struct Node {
 
 impl Default for Node {
     fn default() -> Self {
-        Node{ position: 0, normal: 0, relative: 0, sibling: 0, is_removed: false }
+        Node { position: 0, normal: 0, relative: 0, sibling: 0, is_removed: false }
     }
 }
