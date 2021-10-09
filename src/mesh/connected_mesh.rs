@@ -8,6 +8,16 @@ pub struct ConnectedMesh {
     // colors: Vec<Vector3>,
 }
 
+impl Default for ConnectedMesh {
+    fn default() -> ConnectedMesh {
+        ConnectedMesh { 
+            positions: Vec::new(),
+            normals: Vec::new(),
+            nodes: Vec::new(),
+            face_count: 0 }
+    }
+}
+
 macro_rules! loop_relatives {
     ($node_index:expr, $nodes:expr, $relative:ident, $exec:expr) => {{
         let mut $relative: i32 = $node_index;
@@ -34,13 +44,9 @@ macro_rules! loop_siblings {
     }};
 }
 
+include!("decimate/decimate.rs");
+
 impl ConnectedMesh {    
-    pub fn decimate(&mut self) {
-        let v1 = &self.positions[0];
-        let v2 = &self.positions[1];
-        let product = v1 ^ v2;
-        self.positions.push(product);
-    }
 
     fn collapse_edge(&mut self, node_index_a: i32, node_index_b: i32) {
 
@@ -204,7 +210,7 @@ pub struct Group {
     index_count: i32,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct Node {
     sibling: i32,
     relative: i32,
@@ -219,6 +225,6 @@ pub struct Node {
 
 impl Default for Node {
     fn default() -> Self {
-        Node{ position: 0, normal: 0, relative: 0, sibling: 0, is_removed: false }
+        Node { position: 0, normal: 0, relative: 0, sibling: 0, is_removed: false }
     }
 }

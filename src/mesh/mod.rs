@@ -4,6 +4,7 @@ use crate::utils::*;
 
 use std::hash::BuildHasherDefault;
 use hashbrown::HashMap;
+use std::cmp::Ordering;
 
 include!("connected_mesh.rs");
 include!("shared_mesh.rs");

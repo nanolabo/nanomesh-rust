@@ -9,3 +9,7 @@ edition = "2018"
 assert_approx_eq = "1.1.0"
 libc = "0.2.102"
 hashbrown = "0.3"
+
+indexmap = "1.7.0"
+linked_hash_set = "0.1.4"
+priority-queue = "1.2.0"
