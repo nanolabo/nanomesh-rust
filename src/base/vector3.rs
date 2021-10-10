@@ -1,10 +1,11 @@
 use std::ops::*;
+use std::fmt::*;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Vector3 {
-    x: f64,
-    y: f64,
-    z: f64,
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
 }
 
 impl Vector3
@@ -50,6 +51,17 @@ impl Sub<&Vector3> for &Vector3 {
     }
 }
 
+impl Neg for &Vector3 {
+    type Output = Vector3;
+    fn neg(self) -> Vector3 {
+        return Vector3 { 
+            x: -self.x,
+            y: -self.y,
+            z: -self.z
+        }
+    }
+}
+
 impl Div<f64> for &Vector3 {
     type Output = Vector3;
     fn div(self, _rhs: f64) -> Vector3 {
@@ -90,6 +102,12 @@ impl PartialEq for Vector3 {
 impl Default for Vector3 {
     fn default() -> Self {
         Vector3 { x: 0., y: 0., z: 0. }
+    }
+}
+
+impl Display for Vector3 {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        write!(f, "<x:{} y:{} z:{}>", self.x, self.y, self.z)
     }
 }
 

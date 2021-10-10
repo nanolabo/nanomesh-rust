@@ -44,8 +44,6 @@ macro_rules! loop_siblings {
     }};
 }
 
-include!("decimate/decimate.rs");
-
 impl ConnectedMesh {    
 
     fn collapse_edge(&mut self, node_index_a: i32, node_index_b: i32) {
@@ -203,7 +201,19 @@ impl ConnectedMesh {
 
         return edge_weight;
     }
+
+    fn get_face_normal(&mut self, node_index: i32) -> Vector3 {
+        let node_a = self.nodes[node_index as usize];
+        let node_b = self.nodes[node_a.relative as usize];
+        let node_c = self.nodes[node_b.relative as usize];
+        let pos_a = &self.positions[node_a.position as usize];
+        let pos_b = &self.positions[node_b.position as usize];
+        let pos_c = &self.positions[node_c.position as usize];
+        (&(pos_b - pos_a) ^ &(pos_c - pos_a)).normalized()
+    }
 }
+
+include!("decimate/decimate.rs");
 
 pub struct Group {
     first_index: i32,
