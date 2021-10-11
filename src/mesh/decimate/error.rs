@@ -1,3 +1,4 @@
+#[derive(Debug, Copy, Clone)]
 struct Error(f64);
 
 impl PartialOrd for Error {
