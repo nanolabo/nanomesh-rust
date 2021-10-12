@@ -1,6 +1,6 @@
 pub struct SharedMesh {
-    positions: Vec<Vector3>,
-    normals: Vec<Vector3>,
-    triangles: Vec<i32>,
-    groups: Vec<Group>,
+    pub positions: Vec<Vector3>,
+    pub normals: Vec<Vector3>,
+    pub triangles: Vec<i32>,
+    pub groups: Vec<Group>,
 }
