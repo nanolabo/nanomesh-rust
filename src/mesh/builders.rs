@@ -79,7 +79,7 @@ impl From<&ConnectedMesh> for SharedMesh {
     fn from(connected_mesh: &ConnectedMesh) -> Self {
 
         let mut per_vertex_map = HashMap::<[i32; 2], i32>::new();
-        
+        let mut browsed_nodes = HashSet::new();
         let mut triangles = Vec::<i32>::with_capacity((connected_mesh.face_count * 3) as usize);
 
         for i in 0..connected_mesh.nodes.len() {
@@ -87,8 +87,8 @@ impl From<&ConnectedMesh> for SharedMesh {
                 continue;
             }
             let key = [connected_mesh.nodes[i as usize].position, connected_mesh.nodes[i as usize].normal];
-            if per_vertex_map.contains_key(&key) {
-                continue;
+            if browsed_nodes.contains(&(i as i32)) {
+                continue; // TODO: Useful ?
             }
             loop_relatives!(i as i32, connected_mesh.nodes, relative, {
                 let key = [connected_mesh.nodes[relative as usize].position, connected_mesh.nodes[relative as usize].normal];
@@ -96,6 +96,7 @@ impl From<&ConnectedMesh> for SharedMesh {
                     per_vertex_map.insert(key, per_vertex_map.len() as i32);
                 }
                 triangles.push(*per_vertex_map.get(&key).unwrap());
+                browsed_nodes.insert(relative);
             });
         }
 
@@ -169,7 +170,7 @@ impl Into<UnsafeMesh> for SharedMesh {
 }
 
 #[cfg(test)]
-mod tests {
+mod builder_tests {
 
     use crate::base::*;
     use crate::mesh::*;

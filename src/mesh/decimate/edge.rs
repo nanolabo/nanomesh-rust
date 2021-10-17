@@ -1,3 +1,6 @@
+use std::fmt::*;
+
+#[derive(Debug, Copy, Clone)]
 pub struct Edge {
     node_a: Node,
     node_b: Node,
@@ -10,8 +13,8 @@ impl Eq for Edge {
 
 impl PartialEq for Edge {
     fn eq(&self, other: &Self) -> bool {
-        self.node_a.position == other.node_a.position
-     && self.node_b.position == other.node_b.position
+        (self.node_a.position == other.node_a.position && self.node_b.position == other.node_b.position)
+     || (self.node_a.position == other.node_b.position && self.node_b.position == other.node_a.position)
     }
 }
 
@@ -29,5 +32,11 @@ impl Edge {
             node_b: node_b,
             collapse_to: Vector3::default()
         }
+    }
+}
+
+impl Display for Edge {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        write!(f, "<pos A:{} pos B:{}>", self.node_a.position, self.node_b.position)
     }
 }

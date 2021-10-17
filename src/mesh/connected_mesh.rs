@@ -1,3 +1,5 @@
+use std::fmt::*;
+
 pub struct ConnectedMesh {
     nodes: Vec<Node>,
     face_count: u32,
@@ -44,17 +46,59 @@ macro_rules! loop_siblings {
     }};
 }
 
-impl ConnectedMesh {    
+impl ConnectedMesh {
 
-    fn collapse_edge(&mut self, node_index_a: i32, node_index_b: i32) {
+    fn check_siblings(&self, node_index: i32) -> bool {
+        let mut i = 0;
+        loop_siblings!(node_index, self.nodes, sibling, {
+            i += 1;
+            if i > 100
+            {
+                return false;
+            }        
+        });
+        return true;
+    }
+
+    fn print_siblings(&self, node_index: i32) -> bool {
+        let mut i = 0;
+        loop_siblings!(node_index, self.nodes, sibling, {
+            print!("{} ", sibling);
+            if self.nodes[sibling as usize].is_removed {
+                print!("X");
+            }
+            print!(" > ");
+            i += 1;
+            if i > 100
+            {
+                print!("...\n");
+                return false;
+            }        
+        });
+        print!("\n");
+        return true;
+    }
+
+    fn check_relatives(&self, node_index: i32) -> bool {
+        let mut i = 0;
+        loop_relatives!(node_index, self.nodes, relative, {
+            i += 1;
+            if i > 100
+            {
+                return false;
+            }        
+        });
+        return true;
+    }
+
+    fn collapse_edge_to_a(&mut self, node_index_a: i32, node_index_b: i32) -> i32 {
 
         let pos_a = self.nodes[node_index_a as usize].position;
         let pos_b = self.nodes[node_index_b as usize].position;
 
-        debug_assert!(pos_a != pos_a);
+        debug_assert!(pos_a != pos_b);
 
         loop_siblings!(node_index_a, self.nodes, sibling_of_a, {
-
             let mut is_face_touched = false;
             let mut face_edge_count = 0;
             let mut node_index_c = -1;
@@ -66,7 +110,7 @@ impl ConnectedMesh {
                 } else if pos_a != pos_c {
                     node_index_c = relative_of_a;
                 }
-                face_edge_count = face_edge_count + 1;
+                face_edge_count += 1;
             });
 
             debug_assert!(face_edge_count == 3);
@@ -74,16 +118,28 @@ impl ConnectedMesh {
             if is_face_touched {
                 loop_relatives!(sibling_of_a, self.nodes, relative_of_a, {
                     self.nodes[relative_of_a as usize].is_removed = true;
+                    //println!("mark removed {}", relative_of_a)
                 });
-                let valid_node_at_c = self.reconnect_sibling(node_index_c);
+
+                //debug_assert!(self.print_siblings(node_index_c));
+
+                let v_c = self.reconnect_sibling(node_index_c);
+
+                //debug_assert!(self.print_siblings(v_c));
+
                 //let pos_c = self.nodes[node_index_c as usize].position;
                 //update position_to_nodes
-                self.face_count = self.face_count - 1;
+                self.face_count -= 1;
             }
         });
 
-        let valid_node_at_a = self.reconnect_siblings(node_index_a, node_index_b, pos_a);
-        //update position_to_nodes
+        //debug_assert!(self.print_siblings(node_index_a));
+
+        let v_a = self.reconnect_siblings(node_index_a, node_index_b, pos_a);
+
+        //debug_assert!(self.print_siblings(v_a));
+        
+        return v_a;
     }
 
     fn reconnect_siblings(&mut self, node_index_a: i32, node_index_b: i32, position: i32) -> i32 {
@@ -91,33 +147,29 @@ impl ConnectedMesh {
         let mut first_valid = -1;
 
         loop_siblings!(node_index_a, self.nodes, sibling, {
-
-            if self.nodes[sibling as usize].is_removed {
-                continue;
+            if !self.nodes[sibling as usize].is_removed {
+                if first_valid == -1 {
+                    first_valid = sibling;
+                }
+                if last_valid != -1 {
+                    self.nodes[last_valid as usize].sibling = sibling;
+                    self.nodes[last_valid as usize].position = position;
+                }
+                last_valid = sibling;
             }
-            if first_valid == -1 {
-                first_valid = sibling;
-            }
-            if last_valid != -1 {
-                self.nodes[sibling as usize].sibling = sibling;
-                self.nodes[sibling as usize].position = position;
-            }
-            last_valid = sibling;
         });
 
         loop_siblings!(node_index_b, self.nodes, sibling, {
-
-            if self.nodes[sibling as usize].is_removed {
-                continue;
+            if !self.nodes[sibling as usize].is_removed {
+                if first_valid == -1 {
+                    first_valid = sibling;
+                }
+                if last_valid != -1 {
+                    self.nodes[last_valid as usize].sibling = sibling;
+                    self.nodes[last_valid as usize].position = position;
+                }
+                last_valid = sibling;
             }
-            if first_valid == -1 {
-                first_valid = sibling;
-            }
-            if last_valid != -1 {
-                self.nodes[sibling as usize].sibling = sibling;
-                self.nodes[sibling as usize].position = position;
-            }
-            last_valid = sibling;
         });
 
         if last_valid == -1 {
@@ -137,19 +189,17 @@ impl ConnectedMesh {
         let mut position = -1;
 
         loop_siblings!(node_index, self.nodes, sibling, {
-
-            if self.nodes[sibling as usize].is_removed {
-                continue;
+            if !self.nodes[sibling as usize].is_removed {
+                if first_valid == -1 {
+                    first_valid = sibling;
+                    position = self.nodes[sibling as usize].position;
+                }
+                if last_valid != -1 {
+                    self.nodes[last_valid as usize].sibling = sibling;
+                    self.nodes[last_valid as usize].position = position;
+                }
+                last_valid = sibling;
             }
-            if first_valid == -1 {
-                first_valid = sibling;
-                position = self.nodes[sibling as usize].position;
-            }
-            if last_valid != -1 {
-                self.nodes[sibling as usize].sibling = sibling;
-                self.nodes[sibling as usize].position = position;
-            }
-            last_valid = sibling;
         });
 
         if last_valid == -1 {
@@ -171,27 +221,27 @@ impl ConnectedMesh {
         let mut edge_weight = 0.0;
         
         loop_siblings!(node_index_a, self.nodes, sibling_of_a, {
-            if self.nodes[sibling_of_a as usize].is_removed {
-                continue;
-            }
-            loop_relatives!(sibling_of_a, self.nodes, relative_of_a, {
-                let pos_c = self.nodes[relative_of_a as usize].position;
-                if pos_c == pos_b {
-                    faces_attached = faces_attached + 1;
-
-                    if self.normals.len() > 0 {
-                        if attribute_at_b != -1 && self.normals[attribute_at_b as usize] == self.normals[self.nodes[relative_of_a as usize].normal as usize] {
-                            edge_weight = edge_weight + 10.0
+            if !self.nodes[sibling_of_a as usize].is_removed {
+                // Maybe we should begin directly with relative?
+                loop_relatives!(sibling_of_a, self.nodes, relative_of_a, {
+                    let pos_c = self.nodes[relative_of_a as usize].position;
+                    if pos_c == pos_b {
+                        faces_attached = faces_attached + 1;
+    
+                        if self.normals.len() > 0 {
+                            if attribute_at_b != -1 && self.normals[attribute_at_b as usize] == self.normals[self.nodes[relative_of_a as usize].normal as usize] {
+                                edge_weight = edge_weight + 10.0
+                            }
+                            if attribute_at_a != -1 && self.normals[attribute_at_a as usize] == self.normals[self.nodes[sibling_of_a as usize].normal as usize] {
+                                edge_weight = edge_weight + 10.0
+                            }
                         }
-                        if attribute_at_a != -1 && self.normals[attribute_at_a as usize] == self.normals[self.nodes[sibling_of_a as usize].normal as usize] {
-                            edge_weight = edge_weight + 10.0
-                        }
+    
+                        attribute_at_b = self.nodes[relative_of_a as usize].normal;
+                        attribute_at_a = self.nodes[sibling_of_a as usize].normal;
                     }
-
-                    attribute_at_b = self.nodes[relative_of_a as usize].normal;
-                    attribute_at_a = self.nodes[sibling_of_a as usize].normal;
-                }
-            });
+                });
+            }
         });
 
         // Check if border
@@ -236,5 +286,26 @@ pub struct Node {
 impl Default for Node {
     fn default() -> Self {
         Node { position: 0, normal: 0, relative: 0, sibling: 0, is_removed: false }
+    }
+}
+
+impl Display for Node {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        write!(f, "<sibling:{} relative:{} position:{} removed:{}>", self.sibling, self.relative, self.position, self.is_removed)
+    }
+}
+
+#[cfg(test)]
+mod connected_mesh_tests {
+    use super::*;
+    use assert_approx_eq::*;
+
+    #[test]
+    fn add2() {
+        let a = Vector3 { x: 1., y: 2., z: 3. };
+        let b = Vector3 { x: 4., y: 5., z: 6. };
+        let c = Vector3 { x: 5., y: 7., z: 9. };
+        assert_eq!(&a + &b, c);
+        assert_ne!(&a + &b, a);
     }
 }

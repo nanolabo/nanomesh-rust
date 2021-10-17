@@ -15,6 +15,10 @@ use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
 
+use std::fs::{self};
+use std::io::prelude::*;
+use std::io::LineWriter;
+
 fn main() {
 
     let now = Instant::now();
@@ -59,6 +63,23 @@ fn main() {
     println!("decimated");
 
     println!("ms={}", now.elapsed().as_millis());
+
+
+
+    let file = File::create("output.obj").unwrap();
+    let mut file = LineWriter::new(file);
+
+    
+    let shared_mesh = SharedMesh::from(&mesh);
+
+    for i in 0..shared_mesh.positions.len() {
+        file.write_all(format!("v {} {} {}\n", shared_mesh.positions[i].x, shared_mesh.positions[i].y, shared_mesh.positions[i].z).as_bytes()).unwrap();
+    }
+    for i in (0..shared_mesh.triangles.len()).step_by(3) {
+        file.write_all(format!("f {} {} {}\n", shared_mesh.triangles[i] + 1, shared_mesh.triangles[i + 1] + 1, shared_mesh.triangles[i + 2] + 1).as_bytes()).unwrap();
+    }
+
+    file.flush().unwrap();
 }
 
 // The output is wrapped in a Result to allow matching on errors

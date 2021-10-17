@@ -1,6 +1,7 @@
 use crate::SymmetricMatrix;
 use std::hash::Hash;
 use priority_queue::PriorityQueue;
+use hashbrown::HashSet;
 
 include!("edge_hasher.rs");
 include!("edge.rs");
@@ -16,57 +17,111 @@ impl ConnectedMesh {
 
         // Initialize
         for i in 0..self.nodes.len() {
-            // Todo: Ignore removed nodes
+            if self.nodes[i].is_removed {
+                continue;
+            }
             let edge = Edge::new(self.nodes[i] /* will copy */, self.nodes[self.nodes[i].relative as usize] /* will copy */); // Is it enough?
             queue.push(edge, Error(0.0));
+            // let edge = Edge::new(self.nodes[self.nodes[i].relative as usize] /* will copy */, self.nodes[self.nodes[self.nodes[i].relative as usize].relative as usize] /* will copy */); // Is it enough?
+            // queue.push(edge, Error(0.0));
             // Initialize quadrics per position
             if quadrics[self.nodes[i].position as usize].m[0] == -1.0 { // Todo: improve this (degeulassss)
                 calculate_quadric(self, &mut quadrics, i as i32);
             }
         }
-        println!("Edges: {}", queue.len());
+        println!("edges: {}", queue.len());
 
         // Initialize errors
         for x in &mut queue {
+            if x.0.node_a.position == 40 || x.0.node_b.position == 40 {
+                println!("edge in queue: {}", x.0);
+            }
             calculate_error(self, &mut quadrics, x.0, x.1);
         }
 
         // Iterate
         while self.face_count > target_triangle_count {
-            let edge_to_collapse = queue.pop().unwrap().0;
-            
-            let mut nodes_indices = Vec::<i32>::with_capacity(20); // Later change for stack-allocated array
+
+            //println!("faces: {}", self.face_count);
+
+            let mut edge_to_collapse = queue.pop().unwrap().0;
+
+            //println!("collapse edge: {}", edge_to_collapse);
+
+            // Repair
             loop_siblings!(edge_to_collapse.node_a.sibling, self.nodes, sibling, {
-                nodes_indices.push(sibling);
-            });
-            loop_siblings!(edge_to_collapse.node_b.sibling, self.nodes, sibling, {
-                nodes_indices.push(sibling);
-            });
-            // Collapse edge
-            self.collapse_edge(edge_to_collapse.node_a.sibling, edge_to_collapse.node_b.sibling);
-            // Update edges and errors
-            for node_index in nodes_indices {
-                let node = self.nodes[node_index as usize];
-                let edge = &mut Edge::new(node, self.nodes[node.relative as usize]);
-                if node.is_removed {
-                    queue.remove(edge);
-                } else {
-                    // Recompute quadric
-                    calculate_quadric(self, &mut quadrics, node.relative);
-                    // Refresh edge in queue (new collapse target position)
-                    let error = &mut Error(0.);
-                    match queue.get_mut(&edge) {
-                        None => panic!("Should not happen!"),
-                        Some((edge_in_place, _)) =>  {
-                            calculate_error(self, &mut quadrics, edge_in_place, error);
-                            edge_in_place.node_a = edge.node_a;
-                            edge_in_place.node_b = edge.node_b;
-                        }
-                    };
-                    // Refresh error in queue (priority)
-                    queue.change_priority(edge, *error);
+                let node = self.nodes[sibling as usize];
+                if !node.is_removed {
+                    edge_to_collapse.node_a = node;
+                    break;
                 }
-            }
+            });
+
+            loop_siblings!(edge_to_collapse.node_b.sibling, self.nodes, sibling, {
+                let node = self.nodes[sibling as usize];
+                if !node.is_removed {
+                    edge_to_collapse.node_b = node;
+                    break;
+                }
+            });
+
+            //debug_assert!(self.print_siblings(edge_to_collapse.node_a.sibling));
+            //debug_assert!(self.print_siblings(edge_to_collapse.node_b.sibling));
+
+            loop_siblings!(edge_to_collapse.node_a.sibling, self.nodes, sibling, {
+                let node = self.nodes[sibling as usize];
+                let edge = Edge::new(node, self.nodes[node.relative as usize]);
+
+                queue.remove(&edge);
+                // match queue.remove(&edge) {
+                //     None => println!("- already removed {}", edge),
+                //     Some((item, prio)) => println!("- removed {}", edge)
+                // }
+            });
+
+            loop_siblings!(edge_to_collapse.node_b.sibling, self.nodes, sibling, {
+                let node = self.nodes[sibling as usize];
+                let edge = Edge::new(node, self.nodes[node.relative as usize]);
+
+                queue.remove(&edge);
+                // match queue.remove(&edge) {
+                //     None => println!("- already removed {}", edge),
+                //     Some((item, prio)) => println!("- removed {}", edge)
+                // }
+            });
+        
+            //println!("face count {}", self.face_count);
+
+            // Collapse edge
+            //println!("start collapse");
+            let valid_node_index = self.collapse_edge_to_a(edge_to_collapse.node_a.sibling, edge_to_collapse.node_b.sibling);
+            //println!("end collapse");
+
+            //println!("face count {}", self.face_count);
+
+            // Recalculate quadric at A
+            calculate_quadric(self, &mut quadrics, valid_node_index);
+
+            loop_siblings!(valid_node_index, self.nodes, sibling, {
+                let node = self.nodes[sibling as usize];
+                let edge = &mut Edge::new(node, self.nodes[node.relative as usize]);
+
+                // Recompute quadric
+                calculate_quadric(self, &mut quadrics, edge.node_b.sibling);
+
+                // Refresh edge in queue (new collapse target position)
+                let error = &mut Error(0.);
+                calculate_error(self, &mut quadrics, edge, error);
+
+                // TODO: Avoid edge copy?
+                queue.push(*edge, *error);
+                // match queue.push(*edge, *error) { 
+                //     None => println!("pushed {}", edge),
+                //     Some(old) => println!("failed pushing {}", edge)
+                // }
+            });
+
+            //panic!("end");
         }
 
         fn calculate_quadric(connected_mesh: &mut ConnectedMesh, quadrics: &mut Vec<SymmetricMatrix>, node_index: i32) {
