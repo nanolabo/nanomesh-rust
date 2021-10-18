@@ -18,7 +18,7 @@ impl Vector3
         }
     }
 
-    pub fn new2D(x: f64, y: f64) -> Self {
+    pub fn new2d(x: f64, y: f64) -> Self {
         return Vector3 { 
             x: x,
             y: y,

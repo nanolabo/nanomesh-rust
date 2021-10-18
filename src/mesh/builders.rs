@@ -86,7 +86,7 @@ impl From<&ConnectedMesh> for SharedMesh {
             if connected_mesh.nodes[i].is_removed {
                 continue;
             }
-            let key = [connected_mesh.nodes[i as usize].position, connected_mesh.nodes[i as usize].normal];
+            //let key = [connected_mesh.nodes[i as usize].position, connected_mesh.nodes[i as usize].normal];
             if browsed_nodes.contains(&(i as i32)) {
                 continue; // TODO: Useful ?
             }
