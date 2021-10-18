@@ -57,7 +57,7 @@ fn main() {
 
     let mut mesh = ConnectedMesh::from(&shared_mesh);
     println!("connected mesh built");
-    
+
     let now = Instant::now();
     mesh.decimate_to_ratio(0.5);
     println!("decimated in {} ms", now.elapsed().as_millis());

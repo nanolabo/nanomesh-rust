@@ -20,7 +20,9 @@ impl PartialEq for Edge {
 
 impl Hash for Edge {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        (self.pos_a + self.pos_b).hash(state);
+        let mut hash: u64 = (self.pos_a + self.pos_b) as u64;
+        hash *= 13 * (self.pos_a - self.pos_b).abs() as u64; // TODO: Fine tune for optimal performance
+        hash.hash(state);
     }
 }
 

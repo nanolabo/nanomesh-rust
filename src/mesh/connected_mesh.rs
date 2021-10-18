@@ -1,6 +1,6 @@
 use std::fmt::*;
 
-type PosToNodeMap = HashMap::<i32, i32>;
+type PosToNodeMap = HashMap::<i32, i32, BuildHasherDefault<SimpleHasher>>;
 
 pub struct ConnectedMesh {
     nodes: Vec<Node>,

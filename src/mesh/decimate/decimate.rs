@@ -3,8 +3,6 @@ use std::hash::Hash;
 use priority_queue::PriorityQueue;
 use hashbrown::HashSet;
 
-use indexmap::IndexSet;
-
 include!("edge_hasher.rs");
 include!("edge.rs");
 include!("error.rs");
@@ -19,9 +17,7 @@ impl ConnectedMesh {
         let mut queue = PriorityQueue::<Edge, Error, _>::with_hasher(
             BuildHasherDefault::<EdgeHasher>::default()
         );
-        // let mut queue = IndexSet::<Edge, _>::with_hasher(
-        //     BuildHasherDefault::<EdgeHasher>::default()
-        // );
+
         let mut quadrics = vec![SymmetricMatrix::default_uninitalized(); self.positions.len()];
 
         // Initialize
@@ -38,13 +34,12 @@ impl ConnectedMesh {
                 calculate_quadric(self, &mut quadrics, i as i32);
             }
         }
-        println!("edges: {}", queue.len());
 
         // Compute position to node mapping
-        // let mut position_to_node = HashMap::<i32, i32, _>::with_hasher(
-        //     BuildHasherDefault::<SimpleHasher>::default()
-        // );
-        let mut position_to_node = PosToNodeMap::new();
+        let mut position_to_node = HashMap::<i32, i32, _>::with_hasher(
+            BuildHasherDefault::<SimpleHasher>::default()
+        );
+
         for i in 0..self.nodes.len() {
             // TODO: Dont add when removed node
             position_to_node.insert(self.nodes[i as usize].position, i as i32);
@@ -58,71 +53,27 @@ impl ConnectedMesh {
         // Iterate
         while self.face_count > target_triangle_count {
 
-            //println!("faces: {}", self.face_count);
-
             let edge_to_collapse = queue.pop().unwrap().0;
 
-            //println!("collapse edge: {}", edge_to_collapse);
-
-            //debug_assert!(self.print_siblings(edge_to_collapse.node_a.sibling));
-            //debug_assert!(self.print_siblings(edge_to_collapse.node_b.sibling));
-
-            let node_a =  match position_to_node.get(&edge_to_collapse.pos_a) {
-                Some(n) => *n,
+            match position_to_node.get(&edge_to_collapse.pos_a) {
+                Some(_) => (),
                 None => continue
             };
 
-            let node_b =  match position_to_node.get(&edge_to_collapse.pos_b) {
-                Some(n) => *n,
+            match position_to_node.get(&edge_to_collapse.pos_b) {
+                Some(_) => (),
                 None => continue
             };
-
-            loop_relatives!(node_a, self.nodes, relative, {
-                //if node_a != relative {
-                    let node_c = self.nodes[relative as usize];
-
-                    let edge = Edge::new(edge_to_collapse.pos_a, node_c.position);
-    
-                    //queue.remove(&edge);
-                //}
- 
-                // match queue.remove(&edge) {
-                //     None => println!("- already removed {}", edge),
-                //     Some((item, prio)) => println!("- removed {}", edge)
-                // }
-            });
-
-            loop_relatives!(node_b, self.nodes, relative, {
-                //if node_b != relative {
-                    let node_c = self.nodes[relative as usize];
-
-                    let edge = Edge::new(edge_to_collapse.pos_b, node_c.position);
-    
-                    //queue.remove(&edge);
-                //}
-
-                // match queue.remove(&edge) {
-                //     None => println!("- already removed {}", edge),
-                //     Some((item, prio)) => println!("- removed {}", edge)
-                // }
-            });
         
-            //println!("face count {}", self.face_count);
-
             // Collapse edge
-            //println!("start collapse");
             let valid_node_index = self.collapse_edge_to_a(*position_to_node.get(&edge_to_collapse.pos_a).unwrap(), *position_to_node.get(&edge_to_collapse.pos_b).unwrap(), &mut Some(&mut position_to_node));
-            //println!("end collapse");
 
-            if valid_node_index < 0
-            {
+            if valid_node_index < 0 {
                 continue;
             }
 
             // Use optimal position
             self.positions[self.nodes[valid_node_index as usize].position as usize] = edge_to_collapse.collapse_to;
-
-            //println!("face count {}", self.face_count);
 
             // Recalculate quadric at A
             calculate_quadric(self, &mut quadrics, valid_node_index);
@@ -139,15 +90,8 @@ impl ConnectedMesh {
                 let error = &mut Error(0.);
                 calculate_error(self, &mut quadrics, edge, error);
 
-                // TODO: Avoid edge copy?
-                //queue.push(*edge, *error);
-                // match queue.push(*edge, *error) { 
-                //     None => println!("pushed {}", edge),
-                //     Some(old) => println!("failed pushing {}", edge)
-                // }
-
                 match queue.get_mut(edge) {
-                    Some((item, prio)) => {
+                    Some((item, _)) => {
                         item.collapse_to = edge.collapse_to;
                     },
                     None => ()
@@ -155,8 +99,6 @@ impl ConnectedMesh {
 
                 queue.change_priority(edge, *error);
             });
-
-            //panic!("end");
         }
 
         fn calculate_quadric(connected_mesh: &mut ConnectedMesh, quadrics: &mut Vec<SymmetricMatrix>, node_index: i32) {

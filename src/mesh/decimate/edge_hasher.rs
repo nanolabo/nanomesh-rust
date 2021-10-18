@@ -11,15 +11,19 @@ impl Default for EdgeHasher {
 }
 
 impl Hasher for EdgeHasher {
+
     #[inline]
     fn finish(&self) -> u64 {
         self.hash
     }
+
     #[inline]
     fn write(&mut self, _bytes: &[u8]) { 
+        panic!("Not supposed to be called");
     }
+
     #[inline]
-    fn write_i32(&mut self, i: i32) {
-        self.hash = self.hash + i as u64;
+    fn write_u64(&mut self, i: u64) {
+        self.hash = i;
     }
 }
