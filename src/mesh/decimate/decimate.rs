@@ -1,4 +1,5 @@
 use crate::SymmetricMatrix;
+
 use std::hash::Hash;
 use priority_queue::PriorityQueue;
 use hashbrown::HashSet;
@@ -137,21 +138,11 @@ impl ConnectedMesh {
             let error_b = matrix.quadric_distance_to_vertex(&pos_b);
             let error_c = matrix.quadric_distance_to_vertex(&pos_c);
 
-            macro_rules! min {
-                ($lerror_a: expr, $lpos_a: expr, $($lerror_b: expr, $lpos_b: expr),+) => {
-                    {
-                        let mut lerror = $lerror_a;
-                        let mut lpos = $lpos_a;
-                        $({
-                            if $lerror_b < lerror {
-                                lerror = $lerror_b;
-                                lpos = $lpos_b;
-                            }
-                        })*
-                        (lerror, lpos)
-                    }
-                }
-            }
+            // We multiply by edge length to be agnotics with quadrics error.
+            // Otherwise it becomes too scale dependent
+            let length = (pos_b - pos_a).magnitude();
+
+            // TODO: Ponderate with topology
 
             let (xerror, xpos) = min!(*error_o, pos_o, error_a, pos_a, error_b, pos_b, error_c, pos_c);
 
