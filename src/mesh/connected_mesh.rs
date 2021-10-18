@@ -1,5 +1,7 @@
 use std::fmt::*;
 
+type PosToNodeMap = HashMap::<i32, i32>;
+
 pub struct ConnectedMesh {
     nodes: Vec<Node>,
     face_count: u32,
@@ -91,7 +93,7 @@ impl ConnectedMesh {
         return true;
     }
 
-    fn collapse_edge_to_a(&mut self, node_index_a: i32, node_index_b: i32) -> i32 {
+    fn collapse_edge_to_a(&mut self, node_index_a: i32, node_index_b: i32, position_to_node: &mut Option<&mut PosToNodeMap>) -> i32 {
 
         let pos_a = self.nodes[node_index_a as usize].position;
         let pos_b = self.nodes[node_index_b as usize].position;
@@ -123,7 +125,12 @@ impl ConnectedMesh {
 
                 //debug_assert!(self.print_siblings(node_index_c));
 
-                let v_c = self.reconnect_sibling(node_index_c);
+                let valid_node_at_c = self.reconnect_sibling(node_index_c);
+
+                match position_to_node {
+                    Some(pos_to_node) => { pos_to_node.insert(self.nodes[node_index_c as usize].position, valid_node_at_c); },
+                    None => (),
+                };
 
                 //debug_assert!(self.print_siblings(v_c));
 
@@ -135,11 +142,19 @@ impl ConnectedMesh {
 
         //debug_assert!(self.print_siblings(node_index_a));
 
-        let v_a = self.reconnect_siblings(node_index_a, node_index_b, pos_a);
+        let valid_node_at_a = self.reconnect_siblings(node_index_a, node_index_b, pos_a);
+
+        match position_to_node {
+            Some(pos_to_node) => {
+                pos_to_node.insert(pos_a, valid_node_at_a);
+                pos_to_node.remove(&pos_b);
+            },
+            None => (),
+        };
 
         //debug_assert!(self.print_siblings(v_a));
         
-        return v_a;
+        return valid_node_at_a;
     }
 
     fn reconnect_siblings(&mut self, node_index_a: i32, node_index_b: i32, position: i32) -> i32 {
@@ -371,7 +386,7 @@ mod connected_mesh_tests {
     fn collapse_EF_to_E() {
         let mut connected_mesh = build_test_mesh();
 
-        connected_mesh.collapse_edge_to_a(1 /*a node of E*/, 8 /*a node of F*/);
+        connected_mesh.collapse_edge_to_a(1 /*a node of E*/, 8 /*a node of F*/, &mut None);
 
         let mut nodes_removed = 0;
 
@@ -397,7 +412,7 @@ mod connected_mesh_tests {
     fn collapse_EF_to_F() {
         let mut connected_mesh = build_test_mesh();
 
-        connected_mesh.collapse_edge_to_a(8 /*a node of F*/, 1 /*a node of E*/);
+        connected_mesh.collapse_edge_to_a(8 /*a node of F*/, 1 /*a node of E*/, &mut None);
 
         let mut nodes_removed = 0;
 

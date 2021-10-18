@@ -1,9 +1,9 @@
-use std::fmt::*;
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Copy, Clone)]
 pub struct Edge {
-    node_a: Node,
-    node_b: Node,
+    pos_a: i32,
+    pos_b: i32,
     collapse_to: Vector3,
 }
 
@@ -13,23 +13,22 @@ impl Eq for Edge {
 
 impl PartialEq for Edge {
     fn eq(&self, other: &Self) -> bool {
-        (self.node_a.position == other.node_a.position && self.node_b.position == other.node_b.position)
-     || (self.node_a.position == other.node_b.position && self.node_b.position == other.node_a.position)
+        (self.pos_a == other.pos_a && self.pos_b == other.pos_b)
+     || (self.pos_a == other.pos_b && self.pos_b == other.pos_a)
     }
 }
 
 impl Hash for Edge {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.node_a.position.hash(state);
-        self.node_b.position.hash(state);
+        (self.pos_a + self.pos_b).hash(state);
     }
 }
 
 impl Edge {
-    fn new(node_a: Node, node_b: Node) -> Self {
+    fn new(pos_a: i32, pos_b: i32) -> Self {
         Self {
-            node_a: node_a,
-            node_b: node_b,
+            pos_a: pos_a,
+            pos_b: pos_b,
             collapse_to: Vector3::default()
         }
     }
@@ -37,6 +36,6 @@ impl Edge {
 
 impl Display for Edge {
     fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "<pos A:{} pos B:{}>", self.node_a.position, self.node_b.position)
+        write!(f, "<pos A:{} pos B:{}>", self.pos_a, self.pos_b)
     }
 }
