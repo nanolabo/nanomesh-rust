@@ -3,6 +3,8 @@ use std::hash::Hash;
 use priority_queue::PriorityQueue;
 use hashbrown::HashSet;
 
+use indexmap::IndexSet;
+
 include!("edge_hasher.rs");
 include!("edge.rs");
 include!("error.rs");
@@ -17,6 +19,9 @@ impl ConnectedMesh {
         let mut queue = PriorityQueue::<Edge, Error, _>::with_hasher(
             BuildHasherDefault::<EdgeHasher>::default()
         );
+        // let mut queue = IndexSet::<Edge, _>::with_hasher(
+        //     BuildHasherDefault::<EdgeHasher>::default()
+        // );
         let mut quadrics = vec![SymmetricMatrix::default_uninitalized(); self.positions.len()];
 
         // Initialize
@@ -62,34 +67,40 @@ impl ConnectedMesh {
             //debug_assert!(self.print_siblings(edge_to_collapse.node_a.sibling));
             //debug_assert!(self.print_siblings(edge_to_collapse.node_b.sibling));
 
-            let node_a = *position_to_node.get(&edge_to_collapse.pos_a).unwrap();
-            loop_siblings!(node_a, self.nodes, sibling, {
-                let node_a = self.nodes[sibling as usize];
-                let node_c = self.nodes[node_a.relative as usize];
-                let node_c2 = self.nodes[node_c.relative as usize];
+            let node_a =  match position_to_node.get(&edge_to_collapse.pos_a) {
+                Some(n) => *n,
+                None => continue
+            };
 
-                let edge = Edge::new(node_a.position, node_c.position);
-                let edge2 = Edge::new(node_a.position, node_c2.position);
+            let node_b =  match position_to_node.get(&edge_to_collapse.pos_b) {
+                Some(n) => *n,
+                None => continue
+            };
 
-                queue.remove(&edge);
-                queue.remove(&edge2);
+            loop_relatives!(node_a, self.nodes, relative, {
+                //if node_a != relative {
+                    let node_c = self.nodes[relative as usize];
+
+                    let edge = Edge::new(edge_to_collapse.pos_a, node_c.position);
+    
+                    //queue.remove(&edge);
+                //}
+ 
                 // match queue.remove(&edge) {
                 //     None => println!("- already removed {}", edge),
                 //     Some((item, prio)) => println!("- removed {}", edge)
                 // }
             });
 
-            let node_b = *position_to_node.get(&edge_to_collapse.pos_b).unwrap();
-            loop_siblings!(node_b, self.nodes, sibling, {
-                let node_b = self.nodes[sibling as usize];
-                let node_c = self.nodes[node_b.relative as usize];
-                let node_c2 = self.nodes[node_c.relative as usize];
+            loop_relatives!(node_b, self.nodes, relative, {
+                //if node_b != relative {
+                    let node_c = self.nodes[relative as usize];
 
-                let edge = Edge::new(node_b.position, node_c.position);
-                let edge2 = Edge::new(node_b.position, node_c2.position);
+                    let edge = Edge::new(edge_to_collapse.pos_b, node_c.position);
+    
+                    //queue.remove(&edge);
+                //}
 
-                queue.remove(&edge);
-                queue.remove(&edge2);
                 // match queue.remove(&edge) {
                 //     None => println!("- already removed {}", edge),
                 //     Some((item, prio)) => println!("- removed {}", edge)
@@ -129,11 +140,20 @@ impl ConnectedMesh {
                 calculate_error(self, &mut quadrics, edge, error);
 
                 // TODO: Avoid edge copy?
-                queue.push(*edge, *error);
+                //queue.push(*edge, *error);
                 // match queue.push(*edge, *error) { 
                 //     None => println!("pushed {}", edge),
                 //     Some(old) => println!("failed pushing {}", edge)
                 // }
+
+                match queue.get_mut(edge) {
+                    Some((item, prio)) => {
+                        item.collapse_to = edge.collapse_to;
+                    },
+                    None => ()
+                }
+
+                queue.change_priority(edge, *error);
             });
 
             //panic!("end");
