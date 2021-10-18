@@ -18,6 +18,14 @@ impl Vector3
         }
     }
 
+    pub fn new2D(x: f64, y: f64) -> Self {
+        return Vector3 { 
+            x: x,
+            y: y,
+            z: 0.
+        }
+    }
+
     pub fn magnitude(&self) -> f64 {
         return (self * self).sqrt();
     }

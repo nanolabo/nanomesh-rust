@@ -65,9 +65,9 @@ impl ConnectedMesh {
         loop_siblings!(node_index, self.nodes, sibling, {
             print!("{} ", sibling);
             if self.nodes[sibling as usize].is_removed {
-                print!("X");
+                print!("X ");
             }
-            print!(" > ");
+            print!("> ");
             i += 1;
             if i > 100
             {
@@ -283,9 +283,15 @@ pub struct Node {
     is_removed: bool,
 }
 
+impl Node {
+    fn from_layout(position: i32, sibling: i32, relative: i32) -> Self {
+        Node { position: position, sibling: sibling, relative: relative,  normal: 0, is_removed: false }
+    }
+}
+
 impl Default for Node {
     fn default() -> Self {
-        Node { position: 0, normal: 0, relative: 0, sibling: 0, is_removed: false }
+        Node { position: 0, sibling: 0, relative: 0,  normal: 0, is_removed: false }
     }
 }
 
@@ -296,16 +302,120 @@ impl Display for Node {
 }
 
 #[cfg(test)]
+#[allow(non_snake_case)]
 mod connected_mesh_tests {
     use super::*;
-    use assert_approx_eq::*;
+
+    fn build_test_mesh() -> ConnectedMesh {
+
+        // A────────────────────────B
+        // │ ╲           ...---̅ ̅ ̅ ╱ │
+        // │  ╲ ...---̅ ̅ ̅         ╱  │
+        // │   E────────────────F   │
+        // │  ╱ ̅ ̅ ̅ ---...        ╲  │
+        // │ ╱           ̅ ̅ ̅ ---...╲ │
+        // D────────────────────────C
+
+        let mut positions = Vec::new();
+        positions.push(Vector3::new2D(0., 1.)); // A (0)
+        positions.push(Vector3::new2D(2., 1.)); // B (1)
+        positions.push(Vector3::new2D(2., 0.)); // C (2)
+        positions.push(Vector3::new2D(0., 0.)); // D (3)
+        positions.push(Vector3::new2D(0.25, 0.5)); // E (4)
+        positions.push(Vector3::new2D(1.75, 0.5)); // F (5)
+
+        let mut nodes = Vec::new();
+        // Face AED
+        nodes.push(Node::from_layout(0, 3, 1)); // (0)
+        nodes.push(Node::from_layout(4, 5, 2)); // (1)
+        nodes.push(Node::from_layout(3, 9, 0)); // (2)
+        // Face ABE
+        nodes.push(Node::from_layout(0, 0, 4)); // (3)
+        nodes.push(Node::from_layout(1, 15, 5)); // (4)
+        nodes.push(Node::from_layout(4, 6, 3)); // (5)
+        // Face EBF
+        nodes.push(Node::from_layout(4, 12, 7)); // (6)
+        nodes.push(Node::from_layout(1, 4, 8)); // (7)
+        nodes.push(Node::from_layout(5, 17, 6)); // (8)
+        // Face DEC
+        nodes.push(Node::from_layout(3, 2, 10)); // (9)
+        nodes.push(Node::from_layout(4, 1, 11)); // (10)
+        nodes.push(Node::from_layout(2, 14, 9)); // (11)
+        // Face EFC
+        nodes.push(Node::from_layout(4, 10, 13)); // (12)
+        nodes.push(Node::from_layout(5, 8, 14)); // (13)
+        nodes.push(Node::from_layout(2, 16, 12)); // (14)
+        // Face BCF
+        nodes.push(Node::from_layout(1, 7, 16)); // (15)
+        nodes.push(Node::from_layout(2, 11, 17)); // (16)
+        nodes.push(Node::from_layout(5, 13, 15)); // (17)
+
+        let connected_mesh = ConnectedMesh { 
+            positions: positions,
+            nodes: nodes,
+            normals: Vec::new(),
+            face_count: 6 };
+
+        // Verify connectivity
+        for i in 0..connected_mesh.nodes.len() {
+            assert_eq!(connected_mesh.check_siblings(i as i32), true); 
+            assert_eq!(connected_mesh.check_relatives(i as i32), true);
+        }
+
+        assert_eq!(connected_mesh.face_count, 6);
+
+        return connected_mesh;
+    }
 
     #[test]
-    fn add2() {
-        let a = Vector3 { x: 1., y: 2., z: 3. };
-        let b = Vector3 { x: 4., y: 5., z: 6. };
-        let c = Vector3 { x: 5., y: 7., z: 9. };
-        assert_eq!(&a + &b, c);
-        assert_ne!(&a + &b, a);
+    fn collapse_EF_to_E() {
+        let mut connected_mesh = build_test_mesh();
+
+        connected_mesh.collapse_edge_to_a(1 /*a node of E*/, 8 /*a node of F*/);
+
+        let mut nodes_removed = 0;
+
+        for i in 0..connected_mesh.nodes.len() {
+            if connected_mesh.nodes[i].is_removed {
+                nodes_removed += 1;
+            } else {
+                // Verify that connectivity is valid
+                assert_eq!(connected_mesh.check_siblings(i as i32), true); 
+                assert_eq!(connected_mesh.check_relatives(i as i32), true);
+                // Verify that position of a valid node is never F (5), since it is supposed to be removed
+                assert_eq!(connected_mesh.nodes[i].position == 5, false);
+            }
+        }
+        
+        // There should be 2 faces removed
+        assert_eq!(connected_mesh.face_count, 4);
+        // There should be 2 faces removed, which implies 6 nodes
+        assert_eq!(nodes_removed, 6); 
+    }
+
+    #[test]
+    fn collapse_EF_to_F() {
+        let mut connected_mesh = build_test_mesh();
+
+        connected_mesh.collapse_edge_to_a(8 /*a node of F*/, 1 /*a node of E*/);
+
+        let mut nodes_removed = 0;
+
+        for i in 0..connected_mesh.nodes.len() {
+            if connected_mesh.nodes[i].is_removed {
+                nodes_removed += 1;
+            } else {
+                // Verify that connectivity is valid
+                assert_eq!(connected_mesh.check_siblings(i as i32), true); 
+                assert_eq!(connected_mesh.check_relatives(i as i32), true);
+                // Verify that position of a valid node is never E (4), since it is supposed to be removed
+                assert_eq!(connected_mesh.nodes[i].position == 4, false);
+            }
+        }
+        
+        // There should be 2 faces removed
+        assert_eq!(connected_mesh.face_count, 4);
+        // There should be 2 faces removed, which implies 6 nodes
+        assert_eq!(nodes_removed, 6); 
     }
 }

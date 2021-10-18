@@ -27,7 +27,7 @@ fn main() {
     let mut triangles = Vec::<i32>::new();
 
     // File hosts must exist in current path before this produces output
-    if let Ok(lines) = read_lines("./sphere_no_normals.obj") {
+    if let Ok(lines) = read_lines("./high_poly_sphere.obj") {
         println!("start parting");
         for line in lines {
             if let Ok(l) = line {
@@ -59,7 +59,7 @@ fn main() {
 
     let mut mesh = ConnectedMesh::from(&shared_mesh);
     println!("connected mesh built");
-    mesh.decimate(1000);
+    mesh.decimate(40000);
     println!("decimated");
 
     println!("ms={}", now.elapsed().as_millis());

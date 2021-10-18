@@ -33,16 +33,13 @@ impl ConnectedMesh {
 
         // Initialize errors
         for x in &mut queue {
-            if x.0.node_a.position == 40 || x.0.node_b.position == 40 {
-                println!("edge in queue: {}", x.0);
-            }
             calculate_error(self, &mut quadrics, x.0, x.1);
         }
 
         // Iterate
         while self.face_count > target_triangle_count {
 
-            //println!("faces: {}", self.face_count);
+            println!("faces: {}", self.face_count);
 
             let mut edge_to_collapse = queue.pop().unwrap().0;
 
@@ -96,6 +93,9 @@ impl ConnectedMesh {
             //println!("start collapse");
             let valid_node_index = self.collapse_edge_to_a(edge_to_collapse.node_a.sibling, edge_to_collapse.node_b.sibling);
             //println!("end collapse");
+
+            // Use optimal position
+            self.positions[self.nodes[valid_node_index as usize].position as usize] = edge_to_collapse.collapse_to;
 
             //println!("face count {}", self.face_count);
 
