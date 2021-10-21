@@ -267,7 +267,7 @@ impl ConnectedMesh {
         return edge_weight;
     }
 
-    fn get_face_normal(&mut self, node_index: i32) -> Vector3 {
+    fn get_face_normal(&self, node_index: i32) -> Vector3 {
         let node_a = self.nodes[node_index as usize];
         let node_b = self.nodes[node_a.relative as usize];
         let node_c = self.nodes[node_b.relative as usize];
