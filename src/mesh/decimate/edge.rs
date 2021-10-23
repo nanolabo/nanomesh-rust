@@ -19,16 +19,12 @@ impl PartialEq for Edge {
 
 impl Hash for Edge {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        // A or B unaware hash
         let mut hash: u64 = ((self.pos_a + self.pos_b) as u64) << 32 | ((self.pos_a - self.pos_b).abs() as u64);
-
-        // Mix bits
         hash ^= hash >> 33;
-        hash *= 0xff51afd7ed558ccd;
+        hash = hash.wrapping_mul(0xff51afd7ed558ccd);
         hash ^= hash >> 33;
-        hash *= 0xc4ceb9fe1a85ec53;
+        hash = hash.wrapping_mul(0xc4ceb9fe1a85ec53);
         hash ^= hash >> 33;
-
         hash.hash(state);
     }
 }
