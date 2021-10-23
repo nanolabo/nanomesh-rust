@@ -5,7 +5,6 @@ use priority_queue::PriorityQueue;
 use hashbrown::HashSet;
 use pool::Pool;
 
-include!("edge_hasher.rs");
 include!("edge.rs");
 include!("collapse_context.rs");
 
@@ -34,7 +33,7 @@ impl ConnectedMesh {
             }};
         }
 
-        let mut queue = PriorityQueue::<Edge, CollapseContext, _>::with_hasher(BuildHasherDefault::<EdgeHasher>::default());
+        let mut queue = PriorityQueue::<Edge, CollapseContext, _>::with_hasher(BuildHasherDefault::<SimpleHasher>::default());
         let mut position_to_node = i32Map::with_hasher(BuildHasherDefault::<SimpleHasher>::default());
         let mut quadrics = vec![SymmetricMatrix::default_uninitalized(); self.positions.len()];
 
@@ -151,7 +150,7 @@ impl ConnectedMesh {
             collapse_context.weight = connected_mesh.get_edge_topo(node_a, node_b);
         }
 
-        fn calculate_error(connected_mesh: &mut ConnectedMesh, quadrics: &mut Vec<SymmetricMatrix>, queue: &PriorityQueue::<Edge, CollapseContext, BuildHasherDefault<EdgeHasher>>, position_to_node: &i32Map, edge_buffer: &mut i32Set, edge: &Edge, collapse_context: &mut CollapseContext) {
+        fn calculate_error(connected_mesh: &mut ConnectedMesh, quadrics: &mut Vec<SymmetricMatrix>, queue: &PriorityQueue::<Edge, CollapseContext, BuildHasherDefault<SimpleHasher>>, position_to_node: &i32Map, edge_buffer: &mut i32Set, edge: &Edge, collapse_context: &mut CollapseContext) {
 
             let pos_a = &connected_mesh.positions[edge.pos_a as usize];
             let pos_b = &connected_mesh.positions[edge.pos_b as usize];

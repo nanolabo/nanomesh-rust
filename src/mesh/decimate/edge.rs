@@ -1,4 +1,5 @@
 use std::fmt::{Display, Formatter};
+use std::hash::Hasher;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Edge {
@@ -20,11 +21,6 @@ impl PartialEq for Edge {
 impl Hash for Edge {
     fn hash<H: Hasher>(&self, state: &mut H) {
         let mut hash: u64 = ((self.pos_a + self.pos_b) as u64) << 32 | ((self.pos_a - self.pos_b).abs() as u64);
-        hash ^= hash >> 33;
-        hash = hash.wrapping_mul(0xff51afd7ed558ccd);
-        hash ^= hash >> 33;
-        hash = hash.wrapping_mul(0xc4ceb9fe1a85ec53);
-        hash ^= hash >> 33;
         hash.hash(state);
     }
 }
