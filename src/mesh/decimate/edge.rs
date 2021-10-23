@@ -4,7 +4,6 @@ use std::fmt::{Display, Formatter};
 pub struct Edge {
     pos_a: i32,
     pos_b: i32,
-    collapse_to: Vector3,
 }
 
 impl Eq for Edge {
@@ -20,8 +19,16 @@ impl PartialEq for Edge {
 
 impl Hash for Edge {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        let mut hash: u64 = (self.pos_a + self.pos_b) as u64;
-        hash *= 13 * (self.pos_a - self.pos_b).abs() as u64; // TODO: Fine tune for optimal performance
+        // A or B unaware hash
+        let mut hash: u64 = ((self.pos_a + self.pos_b) as u64) << 32 | ((self.pos_a - self.pos_b).abs() as u64);
+
+        // Mix bits
+        hash ^= hash >> 33;
+        hash *= 0xff51afd7ed558ccd;
+        hash ^= hash >> 33;
+        hash *= 0xc4ceb9fe1a85ec53;
+        hash ^= hash >> 33;
+
         hash.hash(state);
     }
 }
@@ -31,7 +38,6 @@ impl Edge {
         Self {
             pos_a: pos_a,
             pos_b: pos_b,
-            collapse_to: Vector3::default()
         }
     }
 }

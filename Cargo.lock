@@ -66,8 +66,15 @@ dependencies = [
  "indexmap",
  "libc",
  "linked_hash_set",
+ "pool",
  "priority-queue",
 ]
+
+[[package]]
+name = "pool"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c7ac1531a0016945992b4e816e81538dfad0b9f00d280bcb707d711839f1536d"
 
 [[package]]
 name = "priority-queue"

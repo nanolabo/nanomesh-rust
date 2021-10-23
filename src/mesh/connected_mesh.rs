@@ -1,6 +1,7 @@
 use std::fmt::*;
 
-type PosToNodeMap = HashMap::<i32, i32, BuildHasherDefault<SimpleHasher>>;
+type i32Map = HashMap::<i32, i32, BuildHasherDefault<SimpleHasher>>;
+type i32Set = HashSet::<i32, BuildHasherDefault<SimpleHasher>>;
 
 pub struct ConnectedMesh {
     nodes: Vec<Node>,
@@ -93,7 +94,7 @@ impl ConnectedMesh {
         return true;
     }
 
-    fn collapse_edge_to_a(&mut self, node_index_a: i32, node_index_b: i32, position_to_node: &mut Option<&mut PosToNodeMap>) -> i32 {
+    fn collapse_edge_to_a(&mut self, node_index_a: i32, node_index_b: i32, position_to_node: &mut Option<&mut i32Map>) -> i32 {
 
         let pos_a = self.nodes[node_index_a as usize].position;
         let pos_b = self.nodes[node_index_b as usize].position;
@@ -228,7 +229,7 @@ impl ConnectedMesh {
         return first_valid;
     }
 
-    fn get_edge_topo(&mut self, node_index_a: i32, node_index_b: i32) -> f64 {
+    fn get_edge_topo(&self, node_index_a: i32, node_index_b: i32) -> f64 {
         let pos_b = self.nodes[node_index_b as usize].position;
         let mut faces_attached = 0;
         let mut attribute_at_a: i32 = -1;
