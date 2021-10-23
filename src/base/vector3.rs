@@ -35,6 +35,13 @@ impl Vector3
         let magnitude = self.magnitude();
         return self / magnitude;
     }
+
+    pub fn distance_to_line(&self, a: &Vector3, b: &Vector3, ) -> f64
+    {
+        let dir = &(a - b).normalized();
+        let distance = (dir ^ &(self - a)).magnitude();
+        return distance;
+    }
 }
 
 impl Add<&Vector3> for &Vector3 {
@@ -66,6 +73,17 @@ impl Neg for &Vector3 {
             x: -self.x,
             y: -self.y,
             z: -self.z
+        }
+    }
+}
+
+impl Mul<f64> for &Vector3 {
+    type Output = Vector3;
+    fn mul(self, _rhs: f64) -> Vector3 {
+        return Vector3 { 
+            x: self.x * _rhs,
+            y: self.y * _rhs,
+            z: self.z * _rhs,
         }
     }
 }
@@ -184,5 +202,14 @@ mod tests {
         let c = Vector3 { x: 1., y: 0., z: 0. };
         assert_eq!(a.normalized(), c);
         assert_approx_eq!(b.normalized().magnitude(), 1., f64::EPSILON);
+    }
+
+    #[test]
+    fn distance_to_line() {
+        let a = Vector3 { x: 1., y: 1., z: 0. };
+        let b = Vector3 { x: 1., y: 3., z: 0. };
+        let c = Vector3 { x: 2., y: 2., z: 0. };
+        assert_eq!(c.distance_to_line(&a, &b), 1.);
+        assert_approx_eq!(b.distance_to_line(&a, &c), 2.0_f64.sqrt(), 0.00001);
     }
 }
