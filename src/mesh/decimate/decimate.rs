@@ -19,7 +19,7 @@ impl ConnectedMesh {
             ($node_index:expr, $edge_buffer:expr,$nodes:expr, $relative:ident, $exec:expr) => {{
                 $edge_buffer.clear();
                 loop_siblings!($node_index, $nodes, sibling, {
-                    let mut $relative: i32 = sibling;
+                    let mut $relative: u32 = sibling;
                     loop {
                         $relative = $nodes[$relative as usize].relative;
                         if $relative == sibling {
@@ -34,10 +34,10 @@ impl ConnectedMesh {
         }
 
         let mut queue = PriorityQueue::<Edge, CollapseContext, _>::with_hasher(BuildHasherDefault::<SimpleHasher>::default());
-        let mut position_to_node = i32Map::with_hasher(BuildHasherDefault::<SimpleHasher>::default());
+        let mut position_to_node = u32Map::with_hasher(BuildHasherDefault::<SimpleHasher>::default());
         let mut quadrics = vec![SymmetricMatrix::default_uninitalized(); self.positions.len()];
 
-        let mut pool = Pool::with_capacity(20, 0, || i32Set::with_hasher(BuildHasherDefault::<SimpleHasher>::default()));
+        let mut pool = Pool::with_capacity(20, 0, || u32Set::with_hasher(BuildHasherDefault::<SimpleHasher>::default()) /* SetU32::new() */);
 
         for i in 0..self.nodes.len() {
             if self.nodes[i].is_removed {
@@ -46,7 +46,7 @@ impl ConnectedMesh {
             // TODO: Check if enough? Maybe there is a better loop for this purpose
             let edge = Edge::new(self.nodes[i].position, self.nodes[self.nodes[i].relative as usize].position);
             queue.push(edge, CollapseContext::default());
-            position_to_node.insert(self.nodes[i as usize].position, i as i32);
+            position_to_node.insert(self.nodes[i as usize].position, i as u32);
         }
 
         // Initialize quadrics
@@ -77,6 +77,9 @@ impl ConnectedMesh {
             }
         }
 
+        let mut iterations = 0;
+        let mut errors_calcs = 0;
+
         // Iterate
         while self.face_count > target_triangle_count {
 
@@ -95,11 +98,13 @@ impl ConnectedMesh {
             };
         
             // Collapse edge
-            let valid_node_index = self.collapse_edge_to_a(*position_to_node.get(&edge_to_collapse.pos_a).unwrap(), *position_to_node.get(&edge_to_collapse.pos_b).unwrap(), &mut Some(&mut position_to_node));
+            let valid_node_index_o = self.collapse_edge_to_a(*position_to_node.get(&edge_to_collapse.pos_a).unwrap(), *position_to_node.get(&edge_to_collapse.pos_b).unwrap(), &mut Some(&mut position_to_node));
 
-            if valid_node_index < 0 {
+            if valid_node_index_o.is_none() {
                 continue;
             }
+
+            let valid_node_index = valid_node_index_o.unwrap();
 
             // Use optimal position
             self.positions[self.nodes[valid_node_index as usize].position as usize] = collapse_context.collapse_to;
@@ -122,16 +127,24 @@ impl ConnectedMesh {
                 calculate_weight(self, &position_to_node, edge, &mut collapse_context);
             });
 
+            iterations += 1;
+
             for position in positions.iter() {
+
+                debug_assert!(node_a.position != *position);
+
                 let edge = &Edge::new(node_a.position, *position);
                 // Refresh edge in queue (new collapse target position)
                 let mut collapse_context = *queue.get(&edge).unwrap().1;
+                errors_calcs += 1;
                 calculate_error(self, &mut quadrics, &queue, &position_to_node, &mut pool.checkout().unwrap(), edge, &mut collapse_context);
                 queue.change_priority(edge, collapse_context);
             }
         }
 
-        fn calculate_quadric(connected_mesh: &mut ConnectedMesh, quadrics: &mut Vec<SymmetricMatrix>, node_index: i32) {
+        println!("itertations:{}, calcs:{}", iterations, errors_calcs);
+
+        fn calculate_quadric(connected_mesh: &mut ConnectedMesh, quadrics: &mut Vec<SymmetricMatrix>, node_index: u32) {
             let mut matrix = SymmetricMatrix::default_zeroes();
             loop_siblings!(node_index, connected_mesh.nodes, sibling, {
                 let face_normal = &connected_mesh.get_face_normal(sibling);
@@ -142,7 +155,7 @@ impl ConnectedMesh {
             quadrics[connected_mesh.nodes[node_index as usize].position as usize] = matrix;
         }
 
-        fn calculate_weight(connected_mesh: &ConnectedMesh, position_to_node: &i32Map, edge: &Edge, collapse_context: &mut CollapseContext) {
+        fn calculate_weight(connected_mesh: &ConnectedMesh, position_to_node: &u32Map, edge: &Edge, collapse_context: &mut CollapseContext) {
 
             let node_a = *position_to_node.get(&edge.pos_a).unwrap();
             let node_b = *position_to_node.get(&edge.pos_b).unwrap();
@@ -150,7 +163,7 @@ impl ConnectedMesh {
             collapse_context.weight = connected_mesh.get_edge_topo(node_a, node_b);
         }
 
-        fn calculate_error(connected_mesh: &mut ConnectedMesh, quadrics: &mut Vec<SymmetricMatrix>, queue: &PriorityQueue::<Edge, CollapseContext, BuildHasherDefault<SimpleHasher>>, position_to_node: &i32Map, edge_buffer: &mut i32Set, edge: &Edge, collapse_context: &mut CollapseContext) {
+        fn calculate_error(connected_mesh: &mut ConnectedMesh, quadrics: &mut Vec<SymmetricMatrix>, queue: &PriorityQueue::<Edge, CollapseContext, BuildHasherDefault<SimpleHasher>>, position_to_node: &u32Map, edge_buffer: &mut u32Set, edge: &Edge, collapse_context: &mut CollapseContext) {
 
             let pos_a = &connected_mesh.positions[edge.pos_a as usize];
             let pos_b = &connected_mesh.positions[edge.pos_b as usize];
@@ -182,7 +195,7 @@ impl ConnectedMesh {
             // Otherwise it becomes too scale dependent
             let length = (pos_b - pos_a).magnitude();
 
-            loop_edges!(node_a, edge_buffer, connected_mesh.nodes, relative, {
+            loop_edges!(node_a, edge_buffer, &connected_mesh.nodes, relative, {
                 let pos_d_index = connected_mesh.nodes[relative as usize].position;
                 let pos_d = &connected_mesh.positions[pos_d_index as usize];
                 let weight = queue.get(&Edge::new(edge.pos_a, pos_d_index)).unwrap().1.weight;
@@ -190,7 +203,7 @@ impl ConnectedMesh {
                 error_c += weight * length * pos_a.distance_to_line(pos_c, pos_d);
             });
 
-            loop_edges!(node_b, edge_buffer, connected_mesh.nodes, relative, {
+            loop_edges!(node_b, edge_buffer, &connected_mesh.nodes, relative, {
                 let pos_d_index = connected_mesh.nodes[relative as usize].position;
                 let pos_d = &connected_mesh.positions[pos_d_index as usize];
                 let weight = queue.get(&Edge::new(edge.pos_b, pos_d_index)).unwrap().1.weight;

@@ -9,7 +9,7 @@ use crate::Vector3;
 pub fn read(path: &str) -> SharedMesh {
 
     let mut positions = Vec::<Vector3>::new();
-    let mut triangles = Vec::<i32>::new();
+    let mut triangles = Vec::<u32>::new();
 
     if let Ok(lines) = read_lines(path) {
         for line in lines {
@@ -21,9 +21,9 @@ pub fn read(path: &str) -> SharedMesh {
                         positions.push(position);
                     },
                     "f" => {
-                        triangles.push(split[1].parse::<i32>().unwrap() - 1);
-                        triangles.push(split[2].parse::<i32>().unwrap() - 1);
-                        triangles.push(split[3].parse::<i32>().unwrap() - 1);
+                        triangles.push(split[1].parse::<u32>().unwrap() - 1);
+                        triangles.push(split[2].parse::<u32>().unwrap() - 1);
+                        triangles.push(split[3].parse::<u32>().unwrap() - 1);
                     },
                     _ => ()
                 }

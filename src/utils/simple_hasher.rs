@@ -21,7 +21,7 @@ impl Hasher for SimpleHasher {
     }
 
     #[inline]
-    fn write_i32(&mut self, i: i32) {
+    fn write_u32(&mut self, i: u32) {
         let mut hash: u64 = i as u64;
         hash ^= hash >> 33;
         hash = hash.wrapping_mul(0xff51afd7ed558ccd);
