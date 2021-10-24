@@ -3,8 +3,8 @@ use std::hash::Hasher;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Edge {
-    pos_a: i32,
-    pos_b: i32,
+    pos_a: u32,
+    pos_b: u32,
 }
 
 impl Eq for Edge {
@@ -20,13 +20,13 @@ impl PartialEq for Edge {
 
 impl Hash for Edge {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        let mut hash: u64 = ((self.pos_a + self.pos_b) as u64) << 32 | ((self.pos_a - self.pos_b).abs() as u64);
+        let hash: u64 = ((self.pos_a + self.pos_b) as u64) << 32 | (((self.pos_a as i32) - (self.pos_b as i32)).abs() as u64);
         hash.hash(state);
     }
 }
 
 impl Edge {
-    fn new(pos_a: i32, pos_b: i32) -> Self {
+    fn new(pos_a: u32, pos_b: u32) -> Self {
         Self {
             pos_a: pos_a,
             pos_b: pos_b,

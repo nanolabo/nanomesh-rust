@@ -2,7 +2,7 @@ impl From<&SharedMesh> for ConnectedMesh {
     fn from(shared_mesh: &SharedMesh) -> Self {
         let triangles = &shared_mesh.triangles;
         let mut nodes = vec![Node::default(); triangles.len()];
-        let mut vertex_to_nodes = HashMap::<i32, Vec<i32>, _>::with_hasher(
+        let mut vertex_to_nodes = HashMap::<u32, Vec<u32>, _>::with_hasher(
             BuildHasherDefault::<SimpleHasher>::default()
         );
         let mut face_count = 0;
@@ -12,31 +12,31 @@ impl From<&SharedMesh> for ConnectedMesh {
                 let mut a = &mut nodes[i];
                 a.position = triangles[i];
                 a.normal = triangles[i];
-                a.relative = (i as i32) + 1; // B
+                a.relative = (i as u32) + 1; // B
                 if !vertex_to_nodes.contains_key(&a.position) {
                     vertex_to_nodes.insert(a.position, Vec::new());
                 }
-                vertex_to_nodes.get_mut(&a.position).unwrap().push(i as i32);
+                vertex_to_nodes.get_mut(&a.position).unwrap().push(i as u32);
             }
             {
                 let mut b = &mut nodes[i + 1];
                 b.position = triangles[i + 1];
                 b.normal = triangles[i + 1];
-                b.relative = (i as i32) + 2; // C
+                b.relative = (i as u32) + 2; // C
                 if !vertex_to_nodes.contains_key(&b.position) {
                     vertex_to_nodes.insert(b.position, Vec::new());
                 }  
-                vertex_to_nodes.get_mut(&b.position).unwrap().push((i as i32) + 1);
+                vertex_to_nodes.get_mut(&b.position).unwrap().push((i as u32) + 1);
             }
             {
                 let mut c = &mut nodes[i + 2];
                 c.position = triangles[i + 2];
                 c.normal = triangles[i + 2];
-                c.relative = i as i32; // A
+                c.relative = i as u32; // A
                 if !vertex_to_nodes.contains_key(&c.position) {
                     vertex_to_nodes.insert(c.position, Vec::new());
                 }
-                vertex_to_nodes.get_mut(&c.position).unwrap().push((i as i32) + 2);
+                vertex_to_nodes.get_mut(&c.position).unwrap().push((i as u32) + 2);
             }
             face_count = face_count + 1;
 
@@ -47,10 +47,10 @@ impl From<&SharedMesh> for ConnectedMesh {
         }
 
         for x in vertex_to_nodes.values() {
-            let mut previous_sibling: i32 = -1;
-            let mut first_sibling: i32 = -1;
+            let mut previous_sibling: u32 = u32::MAX;
+            let mut first_sibling: u32 = u32::MAX;
             for node in x.iter() {
-                if first_sibling != -1 {
+                if first_sibling != u32::MAX {
                     nodes[*node as usize].sibling = previous_sibling;
                 }
                 else {
@@ -78,22 +78,22 @@ impl Into<ConnectedMesh> for SharedMesh {
 impl From<&ConnectedMesh> for SharedMesh {
     fn from(connected_mesh: &ConnectedMesh) -> Self {
 
-        let mut per_vertex_map = HashMap::<[i32; 2], i32>::new();
+        let mut per_vertex_map = HashMap::<[u32; 2], u32>::new();
         let mut browsed_nodes = HashSet::new();
-        let mut triangles = Vec::<i32>::with_capacity((connected_mesh.face_count * 3) as usize);
+        let mut triangles = Vec::<u32>::with_capacity((connected_mesh.face_count * 3) as usize);
 
         for i in 0..connected_mesh.nodes.len() {
             if connected_mesh.nodes[i].is_removed {
                 continue;
             }
             //let key = [connected_mesh.nodes[i as usize].position, connected_mesh.nodes[i as usize].normal];
-            if browsed_nodes.contains(&(i as i32)) {
+            if browsed_nodes.contains(&(i as u32)) {
                 continue; // TODO: Useful ?
             }
-            loop_relatives!(i as i32, connected_mesh.nodes, relative, {
+            loop_relatives!(i as u32, connected_mesh.nodes, relative, {
                 let key = [connected_mesh.nodes[relative as usize].position, connected_mesh.nodes[relative as usize].normal];
                 if !per_vertex_map.contains_key(&key) {
-                    per_vertex_map.insert(key, per_vertex_map.len() as i32);
+                    per_vertex_map.insert(key, per_vertex_map.len() as u32);
                 }
                 triangles.push(*per_vertex_map.get(&key).unwrap());
                 browsed_nodes.insert(relative);
