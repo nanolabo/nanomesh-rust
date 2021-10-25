@@ -14,3 +14,6 @@ indexmap = "1.7.0"
 linked_hash_set = "0.1.4"
 priority-queue = "1.2.0"
 pool = "0.1.3"
+
+fixedbitset = "0.4.0"
+bitvec = "0.22.3"

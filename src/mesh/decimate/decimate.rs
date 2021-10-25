@@ -4,7 +4,9 @@ use std::hash::Hash;
 use priority_queue::PriorityQueue;
 use hashbrown::HashSet;
 use pool::Pool;
-use tinyset::SetU32;
+
+use fixedbitset::FixedBitSet;
+use bitvec::prelude::*;
 
 include!("edge.rs");
 include!("collapse_context.rs");
@@ -18,7 +20,7 @@ impl ConnectedMesh {
 
         macro_rules! loop_edges {
             ($node_index:expr, $edge_buffer:expr,$nodes:expr, $relative:ident, $exec:expr) => {{
-                $edge_buffer.clear();
+                //$edge_buffer.clear();
                 loop_siblings!($node_index, $nodes, sibling, {
                     let mut $relative: u32 = sibling;
                     loop {
@@ -26,9 +28,11 @@ impl ConnectedMesh {
                         if $relative == sibling {
                             break;
                         }
-                        if $edge_buffer.insert($nodes[$relative as usize].position) {
+                        let us = $nodes[$relative as usize].position as usize;
+                        if !$edge_buffer[us] {
                             $exec
                         }
+                        $edge_buffer.set(us, true);
                     }
                 });
             }};
@@ -37,8 +41,6 @@ impl ConnectedMesh {
         let mut queue = PriorityQueue::<Edge, CollapseContext, _>::with_hasher(BuildHasherDefault::<SimpleHasher>::default());
         let mut position_to_node = u32Map::with_hasher(BuildHasherDefault::<SimpleHasher>::default());
         let mut quadrics = vec![SymmetricMatrix::default_uninitalized(); self.positions.len()];
-
-        let mut pool = Pool::with_capacity(20, 0, || u32Set::with_hasher(BuildHasherDefault::<SimpleHasher>::default()) /* SetU32::new() */);
 
         for i in 0..self.nodes.len() {
             if self.nodes[i].is_removed {
@@ -66,7 +68,7 @@ impl ConnectedMesh {
         
             for x in &queue {
                 let mut collapse_context = CollapseContext::default();
-                calculate_error(self, &mut quadrics, &queue, &position_to_node, &mut pool.checkout().unwrap(), x.0, &mut collapse_context);
+                calculate_error(self, &mut quadrics, &queue, &position_to_node, x.0, &mut collapse_context);
                 collapse_contexts.push(collapse_context);
             }
     
@@ -115,9 +117,7 @@ impl ConnectedMesh {
 
             let node_a = self.nodes[valid_node_index as usize];
 
-            let mut positions = pool.checkout().unwrap();
-
-            loop_edges!(valid_node_index, positions, self.nodes, relative, {
+            loop_edges!(valid_node_index, bitarr![1; 100_000], self.nodes, relative, {
                 let node_c = self.nodes[relative as usize];
                 let edge = &Edge::new(node_a.position, node_c.position);
                 // Recompute quadric
@@ -130,17 +130,17 @@ impl ConnectedMesh {
 
             iterations += 1;
 
-            for position in positions.iter() {
+            loop_edges!(valid_node_index, bitarr![1; 100_000], self.nodes, relative, {
+                let pos: u32 = self.nodes[relative as usize].position;
+                debug_assert!(node_a.position != pos);
 
-                debug_assert!(node_a.position != *position);
-
-                let edge = &Edge::new(node_a.position, *position);
+                let edge = &Edge::new(node_a.position, pos);
                 // Refresh edge in queue (new collapse target position)
                 let mut collapse_context = *queue.get(&edge).unwrap().1;
                 errors_calcs += 1;
-                calculate_error(self, &mut quadrics, &queue, &position_to_node, &mut pool.checkout().unwrap(), edge, &mut collapse_context);
+                calculate_error(self, &mut quadrics, &queue, &position_to_node, edge, &mut collapse_context);
                 queue.change_priority(edge, collapse_context);
-            }
+            });
         }
 
         println!("itertations:{}, calcs:{}", iterations, errors_calcs);
@@ -164,7 +164,7 @@ impl ConnectedMesh {
             collapse_context.weight = connected_mesh.get_edge_topo(node_a, node_b);
         }
 
-        fn calculate_error(connected_mesh: &mut ConnectedMesh, quadrics: &mut Vec<SymmetricMatrix>, queue: &PriorityQueue::<Edge, CollapseContext, BuildHasherDefault<SimpleHasher>>, position_to_node: &u32Map, edge_buffer: &mut u32Set, edge: &Edge, collapse_context: &mut CollapseContext) {
+        fn calculate_error(connected_mesh: &mut ConnectedMesh, quadrics: &mut Vec<SymmetricMatrix>, queue: &PriorityQueue::<Edge, CollapseContext, BuildHasherDefault<SimpleHasher>>, position_to_node: &u32Map, edge: &Edge, collapse_context: &mut CollapseContext) {
 
             let pos_a = &connected_mesh.positions[edge.pos_a as usize];
             let pos_b = &connected_mesh.positions[edge.pos_b as usize];
@@ -196,7 +196,7 @@ impl ConnectedMesh {
             // Otherwise it becomes too scale dependent
             let length = (pos_b - pos_a).magnitude();
 
-            loop_edges!(node_a, edge_buffer, &connected_mesh.nodes, relative, {
+            loop_edges!(node_a, bitarr![1; 100_000], &connected_mesh.nodes, relative, {
                 let pos_d_index = connected_mesh.nodes[relative as usize].position;
                 let pos_d = &connected_mesh.positions[pos_d_index as usize];
                 let weight = queue.get(&Edge::new(edge.pos_a, pos_d_index)).unwrap().1.weight;
@@ -204,7 +204,7 @@ impl ConnectedMesh {
                 error_c += weight * length * pos_a.distance_to_line(pos_c, pos_d);
             });
 
-            loop_edges!(node_b, edge_buffer, &connected_mesh.nodes, relative, {
+            loop_edges!(node_b, bitarr![1; 100_000], &connected_mesh.nodes, relative, {
                 let pos_d_index = connected_mesh.nodes[relative as usize].position;
                 let pos_d = &connected_mesh.positions[pos_d_index as usize];
                 let weight = queue.get(&Edge::new(edge.pos_b, pos_d_index)).unwrap().1.weight;
