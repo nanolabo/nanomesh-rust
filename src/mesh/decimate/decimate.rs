@@ -77,9 +77,6 @@ impl ConnectedMesh {
             }
         }
 
-        let mut iterations = 0;
-        let mut errors_calcs = 0;
-
         // Iterate
         while self.face_count > target_triangle_count {
 
@@ -127,25 +124,20 @@ impl ConnectedMesh {
                 calculate_weight(self, &position_to_node, edge, &mut collapse_context);
             });
 
-            iterations += 1;
-
             for position in positions.iter() {
-
                 debug_assert!(node_a.position != *position);
-
                 let edge = &Edge::new(node_a.position, *position);
                 // Refresh edge in queue (new collapse target position)
                 let mut collapse_context = *queue.get(&edge).unwrap().1;
-                errors_calcs += 1;
                 calculate_error(self, &mut quadrics, &queue, &position_to_node, &mut pool.checkout().unwrap(), edge, &mut collapse_context);
                 queue.change_priority(edge, collapse_context);
             }
         }
 
-        println!("itertations:{}, calcs:{}", iterations, errors_calcs);
-
-        fn calculate_quadric(connected_mesh: &mut ConnectedMesh, quadrics: &mut Vec<SymmetricMatrix>, node_index: u32) {
+        fn calculate_quadric(connected_mesh: &mut ConnectedMesh, quadrics: &mut Vec<SymmetricMatrix>, node_index: u32)
+        {
             let mut matrix = SymmetricMatrix::default_zeroes();
+
             loop_siblings!(node_index, connected_mesh.nodes, sibling, {
                 let face_normal = &connected_mesh.get_face_normal(sibling);
                 let position = &connected_mesh.positions[connected_mesh.nodes[sibling as usize].position as usize];
@@ -155,16 +147,16 @@ impl ConnectedMesh {
             quadrics[connected_mesh.nodes[node_index as usize].position as usize] = matrix;
         }
 
-        fn calculate_weight(connected_mesh: &ConnectedMesh, position_to_node: &u32Map, edge: &Edge, collapse_context: &mut CollapseContext) {
-
+        fn calculate_weight(connected_mesh: &ConnectedMesh, position_to_node: &u32Map, edge: &Edge, collapse_context: &mut CollapseContext)
+        {
             let node_a = *position_to_node.get(&edge.pos_a).unwrap();
             let node_b = *position_to_node.get(&edge.pos_b).unwrap();
 
             collapse_context.weight = connected_mesh.get_edge_topo(node_a, node_b);
         }
 
-        fn calculate_error(connected_mesh: &mut ConnectedMesh, quadrics: &mut Vec<SymmetricMatrix>, queue: &PriorityQueue::<Edge, CollapseContext, BuildHasherDefault<SimpleHasher>>, position_to_node: &u32Map, edge_buffer: &mut u32Set, edge: &Edge, collapse_context: &mut CollapseContext) {
-
+        fn calculate_error(connected_mesh: &mut ConnectedMesh, quadrics: &mut Vec<SymmetricMatrix>, queue: &PriorityQueue::<Edge, CollapseContext, BuildHasherDefault<SimpleHasher>>, position_to_node: &u32Map, edge_buffer: &mut u32Set, edge: &Edge, collapse_context: &mut CollapseContext)
+        {
             let pos_a = &connected_mesh.positions[edge.pos_a as usize];
             let pos_b = &connected_mesh.positions[edge.pos_b as usize];
             let pos_c = &(&(pos_a + pos_b) / 2.0);
