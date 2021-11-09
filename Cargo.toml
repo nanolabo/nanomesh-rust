@@ -1,9 +1,15 @@
 [package]
-name = "nanomesh-rust"
+name = "nanomesh"
 version = "0.1.0"
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "nanomesh"
+path = "src/lib.rs"
+
+[[bin]]
+name = "decimation-test"
+path = "src/main.rs"
 
 [dependencies]
 assert_approx_eq = "1.1.0"

@@ -58,7 +58,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "nanomesh-rust"
+name = "nanomesh"
 version = "0.1.0"
 dependencies = [
  "assert_approx_eq",
