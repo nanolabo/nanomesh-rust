@@ -7,9 +7,9 @@ edition = "2018"
 name = "nanomesh"
 path = "src/lib.rs"
 
-[[bin]]
-name = "decimation-test"
-path = "src/main.rs"
+[[example]]
+name = "decimate"
+path = "samples/decimate.rs"
 
 [dependencies]
 assert_approx_eq = "1.1.0"

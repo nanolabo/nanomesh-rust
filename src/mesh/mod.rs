@@ -1,6 +1,6 @@
-use crate::Vector3;
-use crate::utils::r#unsafe::*;
-use crate::utils::*;
+use super::base::Vector3;
+use super::utils::r#unsafe::*;
+use super::utils::*;
 
 use std::hash::BuildHasherDefault;
 use hashbrown::HashMap;

@@ -1,5 +1,4 @@
 use super::vector3::Vector3;
-use std::ops::*;
 use std::fmt::*;
 
 #[derive(Debug, Copy, Clone)]

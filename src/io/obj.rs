@@ -1,10 +1,10 @@
-use crate::SharedMesh;
+use super::super::base::Vector3;
+use super::super::mesh::SharedMesh;
+
 use std::fs::File;
 use std::path::Path;
-
 use std::io::prelude::*;
 use std::io::LineWriter;
-use crate::Vector3;
 
 pub fn read(path: &str) -> SharedMesh {
 

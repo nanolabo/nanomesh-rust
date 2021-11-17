@@ -1,4 +1,4 @@
-use crate::SymmetricMatrix;
+use super::base::SymmetricMatrix;
 
 use std::hash::Hash;
 use priority_queue::PriorityQueue;
