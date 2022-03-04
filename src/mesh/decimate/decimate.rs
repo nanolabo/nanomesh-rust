@@ -34,10 +34,10 @@ impl ConnectedMesh {
         }
 
         let mut queue = PriorityQueue::<Edge, CollapseContext, _>::with_hasher(BuildHasherDefault::<SimpleHasher>::default());
-        let mut position_to_node = u32Map::with_hasher(BuildHasherDefault::<SimpleHasher>::default());
+        let mut position_to_node = U32Map::with_hasher(BuildHasherDefault::<SimpleHasher>::default());
         let mut quadrics = vec![SymmetricMatrix::default_uninitalized(); self.positions.len()];
 
-        let mut pool = Pool::with_capacity(20, 0, || u32Set::with_hasher(BuildHasherDefault::<SimpleHasher>::default()) /* SetU32::new() */);
+        let mut pool = Pool::with_capacity(20, 0, || U32Set::with_hasher(BuildHasherDefault::<SimpleHasher>::default()) /* SetU32::new() */);
 
         for i in 0..self.nodes.len() {
             if self.nodes[i].is_removed {
@@ -147,7 +147,7 @@ impl ConnectedMesh {
             quadrics[connected_mesh.nodes[node_index as usize].position as usize] = matrix;
         }
 
-        fn calculate_weight(connected_mesh: &ConnectedMesh, position_to_node: &u32Map, edge: &Edge, collapse_context: &mut CollapseContext)
+        fn calculate_weight(connected_mesh: &ConnectedMesh, position_to_node: &U32Map, edge: &Edge, collapse_context: &mut CollapseContext)
         {
             let node_a = *position_to_node.get(&edge.pos_a).unwrap();
             let node_b = *position_to_node.get(&edge.pos_b).unwrap();
@@ -155,7 +155,7 @@ impl ConnectedMesh {
             collapse_context.weight = connected_mesh.get_edge_topo(node_a, node_b);
         }
 
-        fn calculate_error(connected_mesh: &mut ConnectedMesh, quadrics: &mut Vec<SymmetricMatrix>, queue: &PriorityQueue::<Edge, CollapseContext, BuildHasherDefault<SimpleHasher>>, position_to_node: &u32Map, edge_buffer: &mut u32Set, edge: &Edge, collapse_context: &mut CollapseContext)
+        fn calculate_error(connected_mesh: &mut ConnectedMesh, quadrics: &mut Vec<SymmetricMatrix>, queue: &PriorityQueue::<Edge, CollapseContext, BuildHasherDefault<SimpleHasher>>, position_to_node: &U32Map, edge_buffer: &mut U32Set, edge: &Edge, collapse_context: &mut CollapseContext)
         {
             let pos_a = &connected_mesh.positions[edge.pos_a as usize];
             let pos_b = &connected_mesh.positions[edge.pos_b as usize];

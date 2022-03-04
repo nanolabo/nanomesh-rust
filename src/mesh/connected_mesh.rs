@@ -1,7 +1,7 @@
 use std::fmt::*;
 
-type u32Map = HashMap::<u32, u32, BuildHasherDefault<SimpleHasher>>;
-type u32Set = HashSet::<u32, BuildHasherDefault<SimpleHasher>>;
+type U32Map = HashMap::<u32, u32, BuildHasherDefault<SimpleHasher>>;
+type U32Set = HashSet::<u32, BuildHasherDefault<SimpleHasher>>;
 
 pub struct ConnectedMesh {
     nodes: Vec<Node>,
@@ -94,7 +94,7 @@ impl ConnectedMesh {
         return true;
     }
 
-    fn collapse_edge_to_a(&mut self, node_index_a: u32, node_index_b: u32, position_to_node: &mut Option<&mut u32Map>) -> Option<u32> {
+    fn collapse_edge_to_a(&mut self, node_index_a: u32, node_index_b: u32, position_to_node: &mut Option<&mut U32Map>) -> Option<u32> {
 
         let pos_a = self.nodes[node_index_a as usize].position;
         let pos_b = self.nodes[node_index_b as usize].position;

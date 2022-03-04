@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 #![allow(incomplete_include)]
 
-#[path = "../src/lib.rs"] // Here
+#[path = "../src/lib.rs"]
 mod nanomesh;
 
 use std::time::Instant;
