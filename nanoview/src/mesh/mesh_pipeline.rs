@@ -120,7 +120,7 @@ impl MeshPipeline {
                     wgpu::BindGroupLayoutEntry {
                         binding: 1,
                         visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler { comparison: false, filtering: true },
+                        ty: wgpu::BindingType::Sampler { comparison: false, filtering: false },
                         count: None,
                     },
                     // Base texture
@@ -182,7 +182,7 @@ impl MeshPipeline {
                     wgpu::BindGroupLayoutEntry {
                         binding: 1,
                         visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler { comparison: false, filtering: true },
+                        ty: wgpu::BindingType::Sampler { comparison: false, filtering: false },
                         count: None,
                     },
                     // Base texture
@@ -244,7 +244,7 @@ impl MeshPipeline {
                     wgpu::BindGroupLayoutEntry {
                         binding: 1,
                         visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler { comparison: false, filtering: true },
+                        ty: wgpu::BindingType::Sampler { comparison: false, filtering: false },
                         count: None,
                     },
                     // Base texture
@@ -317,7 +317,7 @@ impl MeshPipeline {
                     wgpu::BindGroupLayoutEntry {
                         binding: 1,
                         visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler { comparison: false, filtering: true },
+                        ty: wgpu::BindingType::Sampler { comparison: false, filtering: false },
                         count: None,
                     },
                     // Base texture
@@ -410,7 +410,7 @@ impl MeshPipeline {
                     wgpu::BindGroupLayoutEntry {
                         binding: 1,
                         visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler { comparison: false, filtering: true },
+                        ty: wgpu::BindingType::Sampler { comparison: false, filtering: false },
                         count: None,
                     },
                     // Base texture
