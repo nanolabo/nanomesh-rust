@@ -105,13 +105,16 @@ impl From<&ConnectedMesh> for SharedMesh {
             positions[*value as usize] = connected_mesh.positions[key[0] as usize];
         }
 
-        let mut normals = Vec::new();
-        if connected_mesh.normals.len() > 0 {
-            normals = vec![Vector3::default(); per_vertex_map.len()];
-            for (key, value) in &per_vertex_map {
-                normals[*value as usize] = connected_mesh.normals[key[1] as usize];
-            }
-        }
+        let normals = match &connected_mesh.normals {
+            Some(cm_normals) => {
+                let mut snormals = vec![Vector3::default(); per_vertex_map.len()];
+                for (key, value) in &per_vertex_map {
+                    snormals[*value as usize] = cm_normals[key[1] as usize];
+                }
+                Some(snormals)
+            },
+            None => None,
+        };
 
         return SharedMesh {
             positions: positions,
@@ -130,15 +133,16 @@ impl Into<SharedMesh> for ConnectedMesh {
 impl From<&SharedMesh> for UnsafeMesh {
     fn from(shared_mesh: &SharedMesh) -> Self {
         unsafe {
+            
             return UnsafeMesh {
-                positions_ptr: vec_to_ptr(&shared_mesh.positions),
-                positions_len: shared_mesh.positions.len() as i32,
-                normals_ptr: vec_to_ptr(&shared_mesh.normals),
-                normals_len: shared_mesh.normals.len() as i32,
-                triangles_ptr: vec_to_ptr(&shared_mesh.triangles),
-                triangles_len: shared_mesh.triangles.len() as i32,
                 groups_ptr: vec_to_ptr(&shared_mesh.groups),
                 groups_len: shared_mesh.positions.len() as i32,
+                triangles_ptr: vec_to_ptr(&shared_mesh.triangles),
+                triangles_len: shared_mesh.triangles.len() as i32,
+                positions_ptr: vec_to_ptr(&shared_mesh.positions),
+                positions_len: shared_mesh.positions.len() as i32,
+                normals_ptr: match &shared_mesh.normals { Some(normals) => vec_to_ptr(&normals), None => std::ptr::null_mut() },
+                normals_len: match &shared_mesh.normals { Some(normals) => normals.len() as i32, None => 0 },
             };
         }
     }
@@ -154,10 +158,10 @@ impl From<&UnsafeMesh> for SharedMesh {
     fn from(unsafe_mesh: &UnsafeMesh) -> Self {
         unsafe {
             return SharedMesh {
-                positions: ptr_to_vec(unsafe_mesh.positions_ptr, unsafe_mesh.positions_len as usize),
-                triangles: ptr_to_vec(unsafe_mesh.triangles_ptr, unsafe_mesh.triangles_len as usize),
-                normals: ptr_to_vec(unsafe_mesh.normals_ptr, unsafe_mesh.normals_len as usize),
                 groups: ptr_to_vec(unsafe_mesh.groups_ptr, unsafe_mesh.groups_len as usize),
+                triangles: ptr_to_vec(unsafe_mesh.triangles_ptr, unsafe_mesh.triangles_len as usize),
+                positions: ptr_to_vec(unsafe_mesh.positions_ptr, unsafe_mesh.positions_len as usize),
+                normals: match unsafe_mesh.normals_ptr.is_null() { false => Some(ptr_to_vec(unsafe_mesh.normals_ptr, unsafe_mesh.normals_len as usize)), true => None },
             };
         }
     }
@@ -196,10 +200,10 @@ mod builder_tests {
         triangles.push(3);
 
         let shared_mesh = SharedMesh { 
-            positions: positions,
+            groups: Vec::new(),
             triangles: triangles,
-            normals: Vec::new(),
-            groups: Vec::new() 
+            positions: positions,
+            normals: None,
         };
 
         let connected_mesh = ConnectedMesh::from(&shared_mesh);
@@ -245,7 +249,7 @@ mod builder_tests {
 
         let connected_mesh = ConnectedMesh {
             positions: positions,
-            normals: Vec::new(),
+            normals: None,
             nodes: nodes,
             face_count: 2,
         };

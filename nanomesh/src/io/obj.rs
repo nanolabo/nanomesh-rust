@@ -32,10 +32,10 @@ pub fn read(path: &str) -> SharedMesh {
     }
 
     SharedMesh {
-        positions: positions,
-        triangles: triangles,
-        normals: Vec::new(),
         groups: Vec::new(),
+        triangles: triangles,
+        positions: positions,
+        normals: None,
     }
 }
 
