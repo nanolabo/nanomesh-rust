@@ -2,6 +2,7 @@
 members = [
     "nanomesh",
     "nanoview",
+    "nanoview2",
     "nanoestimator",
 ]
 resolver = "2"

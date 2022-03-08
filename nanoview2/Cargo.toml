@@ -1,0 +1,30 @@
+[package]
+name = "nanoview2"
+version = "0.1.0"
+authors = ["Olivier Giniaux <oginiaux@gmail.com>"]
+edition = "2018"
+resolver = "2"
+
+[lib]
+name = "nanoview"
+path = "src/lib.rs"
+
+[[example]]
+name = "demo"
+path = "samples/demo.rs"
+
+[dependencies]
+nanomesh = { path = "../nanomesh" }
+wgpu = { version = "0.12", features = ["spirv", "webgl"] }
+tobj = "2"
+image = "0.23.4"
+bytemuck = "1"
+futures = "0.3"
+ultraviolet = "0.8.1"
+slotmap = "0.4.0"
+mikktspace = "0.2.0"
+gltf = "0.15.2"
+
+[dev-dependencies]
+winit = "0.26"
+env_logger = "0.9"
