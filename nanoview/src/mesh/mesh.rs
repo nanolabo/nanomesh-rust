@@ -48,6 +48,7 @@ impl Mesh {
 
         let bbox = mesh_parts_bbox(mesh_parts);
 
+        // Ici
         let mut parts = Vec::new();
         for part_data in mesh_parts {
             parts.push(MeshPart::new(
@@ -63,7 +64,6 @@ impl Mesh {
             bbox: Box3::new(
                 Vector3::new(bbox.0[0].into(), bbox.0[1].into(), bbox.0[2].into()),
                 Vector3::new(bbox.1[0].into(), bbox.1[1].into(), bbox.1[2].into())),
-
             parts,
             bind_group,
             uniform_buf,

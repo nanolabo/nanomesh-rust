@@ -20,6 +20,7 @@ pub fn load_obj(
         assert!(mesh.texcoords.len() / 2 == mesh.positions.len() / 3);
         assert!(mesh.normals.len() == mesh.positions.len());
 
+        // Build mesh here
         let mut vertices = Vec::new();
         for v in 0..mesh.positions.len() / 3 {
             vertices.push(Vertex {

@@ -1,8 +1,7 @@
 #![allow(dead_code)]
 #![allow(incomplete_include)]
 
-#[path = "../src/lib.rs"]
-mod nanoview2;
+use nanoview2::scene::Scene;
 
 static SURFACE_CONFIG: wgpu::SurfaceConfiguration = wgpu::SurfaceConfiguration {
     usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
@@ -23,13 +22,13 @@ fn main() {
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new().build(&event_loop).unwrap(); // No need for FBO
 
-    // SETUP
-    let size = window.inner_size();
-
     let instance = wgpu::Instance::new(wgpu::Backends::all());
     let surface = unsafe { instance.create_surface(&window) }; // No need for FBO
 
     let mut renderer = nanoview2::renderer::Renderer::new(&instance, surface, &SURFACE_CONFIG);
+
+    let mesh: nanoview2::scene::Mesh = nanoview2::scene::Mesh::new(&renderer);
+    renderer.add(mesh);
 
     // EVENT LOOP
 

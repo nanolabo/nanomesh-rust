@@ -16,4 +16,3 @@ pub struct SpotLight {
     pub smoothness: f32,
     pub intensity: f32,
 }
-

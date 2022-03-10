@@ -6,7 +6,7 @@ edition = "2018"
 resolver = "2"
 
 [lib]
-name = "nanoview"
+name = "nanoview2"
 path = "src/lib.rs"
 
 [[example]]

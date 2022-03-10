@@ -2,26 +2,24 @@ use super::scene::Scene;
 use super::scene::SceneObject;
 use slotmap::DenseSlotMap;
 
-use nanomesh::mesh::SharedMesh;
-
 pub type ObjectId = slotmap::DefaultKey;
 
-pub struct Renderer<'a> {
+pub struct Renderer {
     // Scene
-    pub objects: DenseSlotMap<ObjectId, Box<&'a dyn SceneObject>>,
+    pub objects: DenseSlotMap<ObjectId, Box<dyn SceneObject>>,
     // Rendering
     surface: wgpu::Surface,
-    device: wgpu::Device,
+    pub device: wgpu::Device,
     queue: wgpu::Queue,
     render_pipeline: wgpu::RenderPipeline,
 }
 
-impl Renderer<'_> {
-    pub fn new(
+impl Renderer {
+    pub fn new<'a>(
         instance: &wgpu::Instance,
         surface: wgpu::Surface,
         surface_config: &wgpu::SurfaceConfiguration
-    ) -> Renderer<'static> {
+    ) -> Renderer {
 
         let needed_extensions = wgpu::Features::empty();
     
@@ -62,27 +60,33 @@ impl Renderer<'_> {
             push_constant_ranges: &[],
         });
     
+        let vertex_desc = wgpu::VertexBufferLayout {
+            array_stride: 3 * std::mem::size_of::<f32>() as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Vertex,
+            attributes: &wgpu::vertex_attr_array![0 => Float32x3],
+        };
+
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Render Pipeline"),
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shader,
-                entry_point: "vs_main", // 1.
-                buffers: &[], // 2.
+                entry_point: "vs_main",
+                buffers: &[vertex_desc],
             },
-            fragment: Some(wgpu::FragmentState { // 3.
+            fragment: Some(wgpu::FragmentState {
                 module: &shader,
                 entry_point: "fs_main",
-                targets: &[wgpu::ColorTargetState { // 4.
+                targets: &[wgpu::ColorTargetState {
                     format: surface_config.format,
                     blend: Some(wgpu::BlendState::REPLACE),
                     write_mask: wgpu::ColorWrites::ALL,
                 }],
             }),
             primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList, // 1.
+                topology: wgpu::PrimitiveTopology::TriangleList,
                 strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw, // 2.
+                front_face: wgpu::FrontFace::Ccw,
                 cull_mode: Some(wgpu::Face::Back),
                 // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
                 polygon_mode: wgpu::PolygonMode::Fill,
@@ -91,13 +95,13 @@ impl Renderer<'_> {
                 // Requires Features::CONSERVATIVE_RASTERIZATION
                 conservative: false,
             },
-            depth_stencil: None, // 1.
+            depth_stencil: None,
             multisample: wgpu::MultisampleState {
-                count: 1, // 2.
-                mask: !0, // 3.
-                alpha_to_coverage_enabled: false, // 4.
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
             },
-            multiview: None, // 5.
+            multiview: None,
         });
 
         return Renderer {
@@ -143,8 +147,13 @@ impl Renderer<'_> {
             });
     
             // NEW!
-            render_pass.set_pipeline(&self.render_pipeline); // 2.
-            render_pass.draw(0..3, 0..1); // 3.
+            render_pass.set_pipeline(&self.render_pipeline);
+
+            for object in self.objects.iter() {
+                object.1.render(&mut render_pass);
+            }
+
+            render_pass.draw(0..3, 0..1);
         }
     
         // submit will accept anything that implements IntoIter
@@ -155,8 +164,9 @@ impl Renderer<'_> {
     }
 }
 
-impl<'a> Scene<'a> for Renderer<'a> {
-    fn add<T: SceneObject>(&mut self, scene_object: &'a T) -> ObjectId {
+impl Scene for Renderer {
+
+    fn add<T: 'static + SceneObject>(&mut self, scene_object: T) -> ObjectId {
         self.objects.insert(Box::new(scene_object))
     }
 
@@ -165,11 +175,11 @@ impl<'a> Scene<'a> for Renderer<'a> {
             object.1.update();
         }
     }
+
+    fn get_internal(&self, id: ObjectId) -> Option<&Box<dyn SceneObject>> {
+        self.objects.get(id)
+    }
 }
-
-// pub trait VertexDescriptor {
-
-// }
 
 #[cfg(test)]
 mod tests {

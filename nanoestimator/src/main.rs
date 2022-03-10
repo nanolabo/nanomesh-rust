@@ -253,13 +253,16 @@ impl BufferDimensions {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use nanoview::futures::join;
 
-    #[test]
-    fn add_from_estimator() {
-        let a = Vector3 { x: 1., y: 2., z: 3. };
-        let b = Vector3 { x: 4., y: 5., z: 6. };
-        let c = Vector3 { x: 5., y: 7., z: 9. };
-        assert_eq!(&a + &b, c);
-        assert_ne!(&a + &b, a);
+    #[tokio::test]
+    async fn add_from_estimator() {
+        let hash1_fut = run_async("cases/helmet/helmet_original.glb");
+        let hash2_fut = run_async("cases/helmet/helmet_90p.glb");
+
+        let (r, b) = join!(hash1_fut, hash2_fut);
+
+        let dist = hamming_distance(&r.unwrap(), &b.unwrap());
+        assert!(dist > 0 && dist < 5, "hamming distance = {}", dist);
     }
 }
