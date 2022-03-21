@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 #![allow(incomplete_include)]
 
-use nanoview2::scene::Scene;
+use nanoview2::scene::*;
 
 static SURFACE_CONFIG: wgpu::SurfaceConfiguration = wgpu::SurfaceConfiguration {
     usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
@@ -25,10 +25,13 @@ fn main() {
     let instance = wgpu::Instance::new(wgpu::Backends::all());
     let surface = unsafe { instance.create_surface(&window) }; // No need for FBO
 
-    let mut renderer = nanoview2::renderer::Renderer::new(&instance, surface, &SURFACE_CONFIG);
+    let mut renderer = nanoview2::render::Renderer::new(&instance, surface, &SURFACE_CONFIG);
 
-    let mesh: nanoview2::scene::Mesh = nanoview2::scene::Mesh::new(&renderer);
+    let mesh = nanoview2::objects::Mesh::new(&renderer);
     renderer.add(mesh);
+
+    let camera = nanoview2::objects::Camera::new(&renderer);
+    renderer.add(camera);
 
     // EVENT LOOP
 
