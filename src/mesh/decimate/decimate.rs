@@ -145,6 +145,9 @@ impl ConnectedMesh {
                 matrix += SymmetricMatrix::from_normal(face_normal, &dot);
             });
             quadrics[connected_mesh.nodes[node_index as usize].position as usize] = matrix;
+
+            // TODO: Take surface area into consideration
+            // TODO: "For each face adjacent to a given boundary edge, we compute a plane through the edge that is perpendicular to the face"
         }
 
         fn calculate_weight(connected_mesh: &ConnectedMesh, position_to_node: &U32Map, edge: &Edge, collapse_context: &mut CollapseContext)
@@ -187,21 +190,21 @@ impl ConnectedMesh {
             // Otherwise it becomes too scale dependent
             let length = (pos_b - pos_a).magnitude();
 
-            loop_edges!(node_a, edge_buffer, &connected_mesh.nodes, relative, {
-                let pos_d_index = connected_mesh.nodes[relative as usize].position;
-                let pos_d = &connected_mesh.positions[pos_d_index as usize];
-                let weight = queue.get(&Edge::new(edge.pos_a, pos_d_index)).unwrap().1.weight;
-                error_b += weight * length * pos_a.distance_to_line(pos_b, pos_d);
-                error_c += weight * length * pos_a.distance_to_line(pos_c, pos_d);
-            });
+            // loop_edges!(node_a, edge_buffer, &connected_mesh.nodes, relative, {
+            //     let pos_d_index = connected_mesh.nodes[relative as usize].position;
+            //     let pos_d = &connected_mesh.positions[pos_d_index as usize];
+            //     let weight = queue.get(&Edge::new(edge.pos_a, pos_d_index)).unwrap().1.weight;
+            //     error_b += weight * length * pos_a.distance_to_line(pos_b, pos_d);
+            //     error_c += weight * length * pos_a.distance_to_line(pos_c, pos_d);
+            // });
 
-            loop_edges!(node_b, edge_buffer, &connected_mesh.nodes, relative, {
-                let pos_d_index = connected_mesh.nodes[relative as usize].position;
-                let pos_d = &connected_mesh.positions[pos_d_index as usize];
-                let weight = queue.get(&Edge::new(edge.pos_b, pos_d_index)).unwrap().1.weight;
-                error_a += weight * length * pos_b.distance_to_line(pos_a, pos_d);
-                error_c += weight * length * pos_b.distance_to_line(pos_c, pos_d);
-            });
+            // loop_edges!(node_b, edge_buffer, &connected_mesh.nodes, relative, {
+            //     let pos_d_index = connected_mesh.nodes[relative as usize].position;
+            //     let pos_d = &connected_mesh.positions[pos_d_index as usize];
+            //     let weight = queue.get(&Edge::new(edge.pos_b, pos_d_index)).unwrap().1.weight;
+            //     error_a += weight * length * pos_b.distance_to_line(pos_a, pos_d);
+            //     error_c += weight * length * pos_b.distance_to_line(pos_c, pos_d);
+            // });
 
             error_c *= 0.4716252;
 

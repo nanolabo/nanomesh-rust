@@ -240,12 +240,12 @@ mod builder_tests {
         positions.push(Vector3::new(0., 1., 0.));
 
         let mut nodes = Vec::new();
-        nodes.push(Node { position: 0, normal: 0, sibling: 3, relative: 1, is_removed: false });
-        nodes.push(Node { position: 1, normal: 0, sibling: 1, relative: 2, is_removed: false }); // sibling is itself
-        nodes.push(Node { position: 2, normal: 0, sibling: 4, relative: 0, is_removed: false });
-        nodes.push(Node { position: 0, normal: 0, sibling: 0, relative: 4, is_removed: false });
-        nodes.push(Node { position: 2, normal: 0, sibling: 2, relative: 5, is_removed: false });
-        nodes.push(Node { position: 3, normal: 0, sibling: 5, relative: 3, is_removed: false }); // sibling is itself
+        nodes.push(Node::from_layout(0, 3, 1));
+        nodes.push(Node::from_layout(1, 1, 2)); // sibling is itself
+        nodes.push(Node::from_layout(2, 4, 0));
+        nodes.push(Node::from_layout(0, 0, 4));
+        nodes.push(Node::from_layout(2, 2, 5));
+        nodes.push(Node::from_layout(3, 5, 3)); // sibling is itself
 
         let connected_mesh = ConnectedMesh {
             positions: positions,
