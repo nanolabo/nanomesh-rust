@@ -2,33 +2,31 @@ use slotmap::DenseSlotMap;
 use std::collections::HashMap;
 use std::cell::{RefCell, Ref, RefMut};
 use super::*;
-use nanomesh_macros::HelloMacro;
+use nanomesh_macros::Entity;
 
 type Arena<T> = DenseSlotMap<EntityId, T>;
 
 pub trait HelloMacro {
     fn hello_macro();
+    fn scum();
 }
 
 pub trait Entity {
-    fn get_id() -> u32;
-    fn attachement_id(&self) -> Option<EntityId> { None }
+    fn get_id() -> u64;
+    fn get_attachement_id(&self) -> Option<EntityId> { None }
     fn set_attachement_id(&mut self, id: EntityId) { }
 }
 
 #[derive(Default)]
-#[derive(HelloMacro)]
+#[derive(Entity)]
 pub struct Attachment {
-    id: EntityId,
-    attached_entity_type: u32,
+    attachement_id: Option<EntityId>,
+    attached_entity_type: u64,
     attached_entity: EntityId,
     next_attachement: EntityId,
 }
 
-impl Entity for Attachment { 
-    fn get_id() -> u32 { 2 }
-}
-
+#[derive(Entity)]
 pub struct Transform {
     parent_id: EntityId,
     child_id: EntityId,
@@ -42,13 +40,8 @@ pub struct Transform {
 //     }
 // }
 
-impl Entity for Transform { 
-    fn get_id() -> u32 { 1 }
-    fn attachement_id(&self) -> Option<EntityId> { self.attachement_id }
-}
-
 pub struct Scene {
-    entities_per_type: HashMap::<u32, Box<dyn Entities>>,
+    entities_per_type: HashMap::<u64, Box<dyn Entities>>,
 }
 
 impl Scene {
@@ -104,37 +97,40 @@ impl Scene {
             self.entities_per_type.insert(Attachment::get_id(), Box::new(RefCell::new(slotmap)));
         }
 
-        let entities = self.get_entities::<TA>().unwrap();
-        let entity_a = entities.get(entity_id_a).unwrap();
-        let entity_b = entities.get(entity_id_b).unwrap();
+        let mut entities = self.get_entities_mut::<TA>().unwrap();
+        let entity_a = entities.get_mut(entity_id_a).unwrap();
 
         let mut attachements = self.get_entities_mut::<Attachment>().unwrap();
 
         // Get or create attachement for entity A
-        let attachement_id_a = match entity_a.attachement_id() {
+        let attachement_id_a = match entity_a.get_attachement_id() {
             Some(attachement_id) => {
                 attachement_id
             },
             None => {
                 let key = attachements.insert(Attachment::default());
+                entity_a.set_attachement_id(key);
                 key
             }
         };
 
+        let entity_b = entities.get_mut(entity_id_b).unwrap();
+
         // Get or create attachement for entity B
-        let attachement_id_b = match entity_a.attachement_id() {
+        let attachement_id_b = match entity_b.get_attachement_id() {
             Some(attachement_id) => {
                 attachement_id
             },
             None => {
                 let key = attachements.insert(Attachment::default());
+                entity_b.set_attachement_id(key);
                 key
             }
         };
 
         {
-            let mut attachement_a = attachements.get_mut(attachement_id_a).unwrap(); // fails
-            attachement_a.id = attachement_id_a;
+            let mut attachement_a = attachements.get_mut(attachement_id_a).unwrap();
+            //attachement_a.id = attachement_id_a;
             attachement_a.attached_entity = entity_id_b;
             attachement_a.attached_entity_type = TB::get_id();
             attachement_a.next_attachement = attachement_id_b;
@@ -142,7 +138,7 @@ impl Scene {
 
         {
             let mut attachement_b = attachements.get_mut(attachement_id_a).unwrap();
-            attachement_b.id = attachement_id_b;
+            //attachement_b.id = attachement_id_b;
             attachement_b.attached_entity = entity_id_a;
             attachement_b.attached_entity_type = TA::get_id();
             attachement_b.next_attachement = attachement_id_a;
@@ -162,14 +158,17 @@ impl Scene {
         let entity = entities_a.get(entity_id).unwrap();
         match self.get_entities::<Attachment>() {
             Some(attachements) => {
-                let mut current_attachement = attachements.get(entity.attachement_id().unwrap()).unwrap();
+                let attachement_id = entity.get_attachement_id().unwrap();
+                let current_attachement = attachements.get(attachement_id).unwrap();
                 let first_attachement = current_attachement;
                 loop {
                     if current_attachement.attached_entity_type == TB::get_id() {
                         return Some(current_attachement.attached_entity);
                     }
-                    current_attachement = attachements.get(current_attachement.next_attachement).unwrap();
+                    let current_attachement = attachements.get(current_attachement.next_attachement).unwrap();
+                    // PROBLEME
                     if current_attachement.attached_entity == first_attachement.attached_entity {
+                        println!("merde");
                         return None;
                     }
                 }
@@ -199,34 +198,16 @@ mod tests {
     use std::cell::RefCell;
     use std::any::Any;
 
+    #[derive(Entity)]
     pub struct MyEntityA {
         pub attachement_id: Option<EntityId>,
         pub my_value: u32,
     }
 
-    impl Entity for MyEntityA {
-        fn get_id() -> u32 {
-            123
-        }
-        fn attachement_id(&self) -> Option<EntityId> {
-            self.attachement_id
-        }
-        fn set_attachement_id(&mut self, id: EntityId) { self.attachement_id = Some(id); }
-    }
-
+    #[derive(Entity)]
     pub struct MyEntityB {
         pub attachement_id: Option<EntityId>,
         pub my_value: u32,
-    }
-
-    impl Entity for MyEntityB {
-        fn get_id() -> u32 {
-            124
-        }
-        fn attachement_id(&self) -> Option<EntityId> {
-            self.attachement_id
-        }
-        fn set_attachement_id(&mut self, id: EntityId) { self.attachement_id = Some(id); }
     }
 
     #[test]
@@ -244,10 +225,5 @@ mod tests {
         let result = entities_b.get(result_id).unwrap();
 
         assert_eq!(69, result.my_value);
-    }
-
-    #[test]
-    fn say_hello() {
-        Attachment::hello_macro();
     }
 }
