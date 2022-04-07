@@ -6,11 +6,6 @@ use nanomesh_macros::Entity;
 
 type Arena<T> = DenseSlotMap<EntityId, T>;
 
-pub trait HelloMacro {
-    fn hello_macro();
-    fn scum();
-}
-
 pub trait Entity {
     fn get_id() -> u64;
     fn get_attachement_id(&self) -> Option<EntityId> { None }
@@ -82,7 +77,6 @@ impl Scene {
             None => {
                 let mut slotmap = Arena::with_key();
                 let id = slotmap.insert(entity);
-                println!("id:{}", id);
                 self.entities_per_type.insert(T::get_id(), Box::new(RefCell::new(slotmap)));
                 id
             }
@@ -94,12 +88,12 @@ impl Scene {
     fn attach_entities<TA: Entity+'static, TB: Entity+'static>(&mut self, entity_id_a: EntityId, entity_id_b: EntityId) -> Result<(), ()> {
 
         if self.get_entities_mut::<Attachment>().is_none() {
-            let mut slotmap = Arena::<Attachment>::with_key();
+            let slotmap = Arena::<Attachment>::with_key();
             self.entities_per_type.insert(Attachment::get_id(), Box::new(RefCell::new(slotmap)));
         }
 
-        let mut entitiesA = self.get_entities_mut::<TA>().unwrap();
-        let entity_a = entitiesA.get_mut(entity_id_a).unwrap();
+        let mut entities_a = self.get_entities_mut::<TA>().unwrap();
+        let entity_a = entities_a.get_mut(entity_id_a).unwrap();
 
         let mut attachements = self.get_entities_mut::<Attachment>().unwrap();
 
@@ -115,10 +109,10 @@ impl Scene {
             }
         };
 
-        std::mem::drop(entitiesA);
+        std::mem::drop(entities_a);
 
-        let mut entitiesB = self.get_entities_mut::<TB>().unwrap();
-        let entity_b = entitiesB.get_mut(entity_id_b).unwrap();
+        let mut entities_b = self.get_entities_mut::<TB>().unwrap();
+        let entity_b = entities_b.get_mut(entity_id_b).unwrap();
 
         // Get or create attachement for entity B
         let attachement_id_b = match entity_b.get_attachement_id() {
@@ -132,10 +126,7 @@ impl Scene {
             }
         };
 
-        std::mem::drop(entitiesB);
-
-        println!("a:{}", attachement_id_a);
-        println!("b:{}", attachement_id_b);
+        std::mem::drop(entities_b);
 
         {
             let mut attachement_a = attachements.get_mut(attachement_id_a).unwrap();
@@ -146,7 +137,7 @@ impl Scene {
         }
 
         {
-            let mut attachement_b = attachements.get_mut(attachement_id_a).unwrap();
+            let mut attachement_b = attachements.get_mut(attachement_id_b).unwrap();
             //attachement_b.id = attachement_id_b;
             attachement_b.attached_entity = entity_id_a;
             attachement_b.attached_entity_type = TA::get_id();
@@ -169,12 +160,10 @@ impl Scene {
             Some(attachements) => {
                 let attachement_id = entity.get_attachement_id().unwrap();
                 let mut current_attachement = attachements.get(attachement_id).unwrap();
-                println!("current att id:{}", attachement_id);
                 loop {
                     if current_attachement.attached_entity_type == TB::get_id() {
                         return Some(current_attachement.attached_entity);
                     }
-                    println!("next att id:{}", current_attachement.next_attachement);
                     current_attachement = attachements.get(current_attachement.next_attachement).unwrap();
                     // PROBLEME
                     // if current_attachement.attached_entity == first_attachement.attached_entity {
@@ -204,9 +193,16 @@ impl<T: 'static> Entities for RefCell<Arena<T>> {
 
 #[cfg(test)]
 mod tests {
+
+    use std::borrow::Borrow;
+
+    use nanomesh_macros::add_field;
+
     use super::*;
-    use std::cell::RefCell;
-    use std::any::Any;
+
+    #[add_field]
+    #[derive(Entity)]
+    pub struct MyEntityC(Option<EntityId>);
 
     #[derive(Entity)]
     pub struct MyEntityA {
@@ -221,7 +217,31 @@ mod tests {
     }
 
     #[test]
-    fn can_retreive_objects2() {
+    fn can_add_retreive_entity() {
+        let mut scene = Scene::new();
+
+        let entity_id = scene.add_entity(MyEntityA { attachement_id: None, my_value: 123 });
+
+        let entities = scene.get_entities::<MyEntityA>().unwrap();
+        let entity = entities.get(entity_id).unwrap();
+
+        assert_eq!(123, entity.my_value);
+    }
+
+    #[test]
+    fn can_add_similar_entities() {
+        let mut scene = Scene::new();
+
+        for i in 0..1000000 {
+            scene.add_entity(MyEntityA { attachement_id: None, my_value: 1 });
+        }
+
+        let entities = scene.get_entities::<MyEntityA>().unwrap();
+        assert_eq!(1000000, entities.len());
+    }
+
+    #[test]
+    fn can_attach_two_entities() {
         let mut scene = Scene::new();
 
         let a_id = scene.add_entity(MyEntityA { attachement_id: None, my_value: 42 });
@@ -231,9 +251,35 @@ mod tests {
 
         let result_id = scene.get_attached_entity::<MyEntityA, MyEntityB>(a_id).unwrap();
 
-        let entities_b = scene.get_entities::<MyEntityA>().unwrap();
+        let entities_b = scene.get_entities::<MyEntityB>().unwrap();
         let result = entities_b.get(result_id).unwrap();
 
         assert_eq!(69, result.my_value);
+    }
+
+    #[test]
+    fn can_attach_three_entities() {
+        let mut scene = Scene::new();
+
+        let first_id = scene.add_entity(MyEntityA { attachement_id: None, my_value: 1 });
+        let second_id = scene.add_entity(MyEntityA { attachement_id: None, my_value: 2 });
+        let third_id = scene.add_entity(MyEntityA { attachement_id: None, my_value: 3 });
+
+        scene.attach_entities::<MyEntityA, MyEntityA>(first_id, second_id).unwrap();
+        scene.attach_entities::<MyEntityA, MyEntityA>(first_id, third_id).unwrap();
+
+        let result_id = scene.get_attached_entity::<MyEntityA, MyEntityA>(first_id).unwrap();
+
+        let entities = scene.get_entities::<MyEntityA>().unwrap();
+        let result = entities.get(result_id).unwrap();
+
+        assert_eq!(69, result.my_value);
+    }
+
+    #[test]
+    fn insert_with_key() {
+        let mut sm = DenseSlotMap::new();
+        let key = sm.insert_with_key(|k| (k, 20));
+        assert_eq!(sm[key], (key, 20));
     }
 }

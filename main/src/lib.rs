@@ -1,6 +1,3 @@
-#![feature(const_fn_trait_bound)]
-#![feature(const_trait_impl)]
-
 include!("utils/macros.rs");
 
 pub mod base;
