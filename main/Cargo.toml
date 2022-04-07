@@ -6,7 +6,7 @@ edition = "2018"
 
 [lib]
 name = "nanomesh"
-path = "lib.rs"
+path = "src/lib.rs"
 
 # [[example]]
 # name = "decimate"

@@ -1,7 +1,7 @@
-use slotmap::DenseSlotMap;
+use slotmap::*;
 use std::collections::HashMap;
 use std::cell::{RefCell, Ref, RefMut};
-use super::*;
+use super::{EntityId};
 use nanomesh_macros::Entity;
 
 type Arena<T> = DenseSlotMap<EntityId, T>;
@@ -80,8 +80,9 @@ impl Scene {
                 components.borrow_mut().insert(entity)
             },
             None => {
-                let mut slotmap = Arena::new();
+                let mut slotmap = Arena::with_key();
                 let id = slotmap.insert(entity);
+                println!("id:{}", id);
                 self.entities_per_type.insert(T::get_id(), Box::new(RefCell::new(slotmap)));
                 id
             }
@@ -93,12 +94,12 @@ impl Scene {
     fn attach_entities<TA: Entity+'static, TB: Entity+'static>(&mut self, entity_id_a: EntityId, entity_id_b: EntityId) -> Result<(), ()> {
 
         if self.get_entities_mut::<Attachment>().is_none() {
-            let mut slotmap = Arena::<Attachment>::new();
+            let mut slotmap = Arena::<Attachment>::with_key();
             self.entities_per_type.insert(Attachment::get_id(), Box::new(RefCell::new(slotmap)));
         }
 
-        let mut entities = self.get_entities_mut::<TA>().unwrap();
-        let entity_a = entities.get_mut(entity_id_a).unwrap();
+        let mut entitiesA = self.get_entities_mut::<TA>().unwrap();
+        let entity_a = entitiesA.get_mut(entity_id_a).unwrap();
 
         let mut attachements = self.get_entities_mut::<Attachment>().unwrap();
 
@@ -114,7 +115,10 @@ impl Scene {
             }
         };
 
-        let entity_b = entities.get_mut(entity_id_b).unwrap();
+        std::mem::drop(entitiesA);
+
+        let mut entitiesB = self.get_entities_mut::<TB>().unwrap();
+        let entity_b = entitiesB.get_mut(entity_id_b).unwrap();
 
         // Get or create attachement for entity B
         let attachement_id_b = match entity_b.get_attachement_id() {
@@ -127,6 +131,11 @@ impl Scene {
                 key
             }
         };
+
+        std::mem::drop(entitiesB);
+
+        println!("a:{}", attachement_id_a);
+        println!("b:{}", attachement_id_b);
 
         {
             let mut attachement_a = attachements.get_mut(attachement_id_a).unwrap();
@@ -159,18 +168,19 @@ impl Scene {
         match self.get_entities::<Attachment>() {
             Some(attachements) => {
                 let attachement_id = entity.get_attachement_id().unwrap();
-                let current_attachement = attachements.get(attachement_id).unwrap();
-                let first_attachement = current_attachement;
+                let mut current_attachement = attachements.get(attachement_id).unwrap();
+                println!("current att id:{}", attachement_id);
                 loop {
                     if current_attachement.attached_entity_type == TB::get_id() {
                         return Some(current_attachement.attached_entity);
                     }
-                    let current_attachement = attachements.get(current_attachement.next_attachement).unwrap();
+                    println!("next att id:{}", current_attachement.next_attachement);
+                    current_attachement = attachements.get(current_attachement.next_attachement).unwrap();
                     // PROBLEME
-                    if current_attachement.attached_entity == first_attachement.attached_entity {
-                        println!("merde");
-                        return None;
-                    }
+                    // if current_attachement.attached_entity == first_attachement.attached_entity {
+                    //     println!("merde");
+                    //     return None;
+                    // }
                 }
             },
             None => None
