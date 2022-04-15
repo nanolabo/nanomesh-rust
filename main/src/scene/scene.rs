@@ -2,7 +2,7 @@ use slotmap::*;
 use std::collections::HashMap;
 use std::cell::{RefCell, Ref, RefMut};
 use super::{EntityId};
-use nanomesh_macros::Entity;
+use nanomesh_macros::entity;
 
 type Arena<T> = DenseSlotMap<EntityId, T>;
 
@@ -12,28 +12,18 @@ pub trait Entity {
     fn set_attachement_id(&mut self, id: EntityId) { }
 }
 
-#[derive(Default)]
-#[derive(Entity)]
+#[entity]
 pub struct Attachment {
-    attachement_id: Option<EntityId>,
     attached_entity_type: u64,
     attached_entity: EntityId,
     next_attachement: EntityId,
 }
 
-#[derive(Entity)]
-pub struct Transform {
-    parent_id: EntityId,
-    child_id: EntityId,
-    attachement_id: Option<EntityId>,
+impl Default for Attachment {
+    fn default() -> Attachment {
+        Attachment { attachement_id: None, attached_entity_type: 0, attached_entity: EntityId::default(), next_attachement: EntityId::default() }
+    }
 }
-
-// impl Transform {
-//     pub fn new(scene: &mut Scene2, entity_id: EntityId, parent_id: EntityId) -> EntityId {
-//         let transform = Transform { parent_id: parent_id, child_id: EntityId::default(), attached_entity: EntityAttachment::default() };
-//         scene.add_entity(transform)
-//     }
-// }
 
 pub struct Scene {
     entities_per_type: HashMap::<u64, Box<dyn Entities>>,
@@ -196,30 +186,23 @@ mod tests {
 
     use std::borrow::Borrow;
 
-    use nanomesh_macros::add_field;
+    use nanomesh_macros::entity;
 
     use super::*;
 
-    #[add_field]
-    #[derive(Entity)]
-    pub struct MyEntityC(Option<EntityId>);
-
-    #[derive(Entity)]
+    #[entity]
     pub struct MyEntityA {
-        pub attachement_id: Option<EntityId>,
         pub my_value: u32,
     }
 
-    #[derive(Entity)]
+    #[entity]
     pub struct MyEntityB {
-        pub attachement_id: Option<EntityId>,
         pub my_value: u32,
     }
 
     #[test]
     fn can_add_retreive_entity() {
         let mut scene = Scene::new();
-
         let entity_id = scene.add_entity(MyEntityA { attachement_id: None, my_value: 123 });
 
         let entities = scene.get_entities::<MyEntityA>().unwrap();
