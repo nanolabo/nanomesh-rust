@@ -16,7 +16,7 @@ pub fn entity(_args: TokenStream, input: TokenStream) -> TokenStream {
                 syn::Fields::Named(fields) => {
                     fields
                         .named
-                        .push(syn::Field::parse_named.parse2(quote! { pub attachement_id: Option<EntityId> }).unwrap());
+                        .push(syn::Field::parse_named.parse2(quote! { pub next: Option<(EntityId, u64)> }).unwrap())
                 }
                 syn::Fields::Unnamed(fields) => {
                     panic!("entity macro requires named struct parameters!")
@@ -51,11 +51,11 @@ fn implement_entity_trait(ast: &syn::DeriveInput) -> TokenStream {
             fn get_id() -> u64 {
                 #id
             }
-            fn get_attachement_id(&self) -> Option<EntityId> {
-                self.attachement_id
+            fn get_next(&self) -> Option<(EntityId, u64)> {
+                self.next
             }
-            fn set_attachement_id(&mut self, attachement_id: EntityId) {
-                self.attachement_id = Some(attachement_id);
+            fn set_next(&mut self, next_id: EntityId, next_type_id: u64) {
+                self.next = Some((next_id, next_type_id));
             }
         }
     };
