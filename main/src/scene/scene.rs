@@ -18,6 +18,7 @@ pub trait Entity {
 }
 
 #[entity]
+#[derive(Clone)]
 pub struct Attachment {
     attached_entity_type: u64,
     attached_entity: EntityId,
@@ -91,23 +92,6 @@ impl Scene {
         // Todo: can be combined with previous statement
         let mut attachements = self.get_entities_mut::<Attachment>().unwrap();
 
-        let mut entities_a = self.get_entities_mut::<TA>().unwrap();
-        let entity_a = entities_a.get_mut(entity_id_a).unwrap();
-
-        // Get or create attachement for entity A
-        let attachement_id_a = match entity_a.get_attachement_id() {
-            Some(attachement_id) => {
-                attachement_id
-            },
-            None => {
-                let key = attachements.insert(Attachment::default());
-                entity_a.set_attachement_id(key);
-                key
-            }
-        };
-
-        std::mem::drop(entities_a);
-
         let mut entities_b = self.get_entities_mut::<TB>().unwrap();
         let entity_b = entities_b.get_mut(entity_id_b).unwrap();
 
@@ -125,23 +109,45 @@ impl Scene {
 
         std::mem::drop(entities_b);
 
-        {
-            let mut attachement_a = attachements.get_mut(attachement_id_a).unwrap();
-            //attachement_a.id = attachement_id_a;
-            attachement_a.attached_entity = entity_id_b;
-            attachement_a.attached_entity_type = TB::get_id();
-            attachement_a.next_attachement = attachement_id_b;
-        }
+        let mut entities_a = self.get_entities_mut::<TA>().unwrap();
+        let entity_a = entities_a.get_mut(entity_id_a).unwrap();
 
-        {
-            let mut attachement_b = attachements.get_mut(attachement_id_b).unwrap();
-            //attachement_b.id = attachement_id_b;
-            attachement_b.attached_entity = entity_id_a;
-            attachement_b.attached_entity_type = TA::get_id();
-            attachement_b.next_attachement = attachement_id_a;
-        }
+        // Get or create attachement for entity A
+        match entity_a.get_attachement_id() {
+            Some(attachement_id) => {
+                // Si A avait déja un attachement, A doit maintenant pointer vers B, et B prendre l'ancien pointage de A
+                let attachement_a_clone = attachements.get_mut(attachement_id).unwrap().clone();
 
-        // attachement_a.next_attachement = attachement_b.id;
+                let mut attachement_b = attachements.get_mut(attachement_id_b).unwrap();
+                attachement_b.attached_entity = attachement_a_clone.attached_entity;
+                attachement_b.attached_entity_type = attachement_a_clone.attached_entity_type;
+                attachement_b.next_attachement = attachement_a_clone.next_attachement;
+
+                let mut attachement_a = attachements.get_mut(attachement_id).unwrap();
+                attachement_a.attached_entity = entity_id_b;
+                attachement_a.attached_entity_type = TB::get_id();
+                attachement_a.next_attachement = attachement_id_b;
+            },
+            None => {
+                // Si A avait pas d'attachement, A doit pointer vers B, et B vers A
+
+                let mut attachement_a = Attachment::default();
+                attachement_a.attached_entity = entity_id_b;
+                attachement_a.attached_entity_type = TB::get_id();
+                attachement_a.next_attachement = attachement_id_b;
+
+                let key = attachements.insert(attachement_a);
+
+                let mut attachement_b = attachements.get_mut(attachement_id_b).unwrap();
+                attachement_b.attached_entity = entity_id_a;
+                attachement_b.attached_entity_type = TA::get_id();
+                attachement_b.next_attachement = key;
+
+                entity_a.set_attachement_id(key);
+            }
+        };
+
+        std::mem::drop(entities_a);
 
         Ok(())
     }
@@ -155,19 +161,22 @@ impl Scene {
         let entity = entities_a.get(entity_id).unwrap();
         match self.get_entities::<Attachment>() {
             Some(attachements) => {
-                let attachement_id = entity.get_attachement_id().unwrap();
-                let mut current_attachement = attachements.get(attachement_id).unwrap();
-                let first_attachement = current_attachement;
-                loop {
-                    if current_attachement.attached_entity_type == TB::get_id() {
-                        return Some(current_attachement.attached_entity);
-                    }
-                    current_attachement = attachements.get(current_attachement.next_attachement).unwrap();
-                    // PROBLEME
-                    if current_attachement.attached_entity == first_attachement.attached_entity {
-                        println!("merde");
-                        return None;
-                    }
+                match entity.get_attachement_id() {
+                    Some(attachement_id) => {
+                        let mut current_attachement = attachements.get(attachement_id).unwrap();
+                        loop {
+                            if current_attachement.attached_entity_type == TB::get_id() {
+                                return Some(current_attachement.attached_entity);
+                            }
+                            // Prevent looping undefinitely if there is none of the requested entity type amongst attachements
+                            if current_attachement.attached_entity_type == TA::get_id() && current_attachement.attached_entity == entity_id {
+                                return None;
+                            }
+                            // Next round
+                            current_attachement = attachements.get(current_attachement.next_attachement).unwrap();
+                        }
+                    },
+                    None => None
                 }
             },
             None => None
@@ -279,5 +288,40 @@ mod tests {
     
             assert_eq!(3, result.my_value);
         }
+    }
+
+    #[test]
+    fn get_non_attached_entity_returns_none() {
+        let mut scene = Scene::new();
+
+        let a_id = scene.add_entity(MyEntityA { attachement_id: None, my_value: 42 });
+        let b_id = scene.add_entity(MyEntityB { attachement_id: None, my_value: 69 });
+
+        scene.attach_entities::<MyEntityA, MyEntityB>(a_id, b_id).unwrap();
+
+        // There is no MyEntityC attached!
+        assert_eq!(None, scene.get_attached_entity::<MyEntityA, MyEntityC>(a_id));
+    }
+
+    #[test]
+    fn get_no_attachements_returns_none() {
+        let mut scene = Scene::new();
+
+        let a_id = scene.add_entity(MyEntityA { attachement_id: None, my_value: 42 });
+
+        // There is no MyEntityB attached!
+        assert_eq!(None, scene.get_attached_entity::<MyEntityA, MyEntityB>(a_id));
+    }
+
+    #[test]
+    fn get_no_attachements_on_entity_returns_none() {
+        let mut scene = Scene::new();
+
+        let a_id = scene.add_entity(MyEntityA { attachement_id: None, my_value: 42 });
+        // Attachements exists but a doesn't have any
+        scene.add_entity(Attachment::default());
+
+        // There is no MyEntityB attached!
+        assert_eq!(None, scene.get_attached_entity::<MyEntityA, MyEntityB>(a_id));
     }
 }
