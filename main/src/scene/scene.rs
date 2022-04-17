@@ -1,6 +1,11 @@
+/*
+This scene is an memory efficient ECS system
+*/
+
 use slotmap::*;
 use std::collections::HashMap;
 use std::cell::{RefCell, Ref, RefMut};
+use std::thread::current;
 use super::{EntityId};
 use nanomesh_macros::entity;
 
@@ -77,15 +82,17 @@ impl Scene {
     /// ⚠️ Avoid attaching several entities of the same type. This will result in undefined behaviour
     fn attach_entities<TA: Entity+'static, TB: Entity+'static>(&mut self, entity_id_a: EntityId, entity_id_b: EntityId) -> Result<(), ()> {
 
+        // Make sure we can handle attachements
         if self.get_entities_mut::<Attachment>().is_none() {
             let slotmap = Arena::<Attachment>::with_key();
             self.entities_per_type.insert(Attachment::get_id(), Box::new(RefCell::new(slotmap)));
         }
 
+        // Todo: can be combined with previous statement
+        let mut attachements = self.get_entities_mut::<Attachment>().unwrap();
+
         let mut entities_a = self.get_entities_mut::<TA>().unwrap();
         let entity_a = entities_a.get_mut(entity_id_a).unwrap();
-
-        let mut attachements = self.get_entities_mut::<Attachment>().unwrap();
 
         // Get or create attachement for entity A
         let attachement_id_a = match entity_a.get_attachement_id() {
@@ -150,16 +157,17 @@ impl Scene {
             Some(attachements) => {
                 let attachement_id = entity.get_attachement_id().unwrap();
                 let mut current_attachement = attachements.get(attachement_id).unwrap();
+                let first_attachement = current_attachement;
                 loop {
                     if current_attachement.attached_entity_type == TB::get_id() {
                         return Some(current_attachement.attached_entity);
                     }
                     current_attachement = attachements.get(current_attachement.next_attachement).unwrap();
                     // PROBLEME
-                    // if current_attachement.attached_entity == first_attachement.attached_entity {
-                    //     println!("merde");
-                    //     return None;
-                    // }
+                    if current_attachement.attached_entity == first_attachement.attached_entity {
+                        println!("merde");
+                        return None;
+                    }
                 }
             },
             None => None
@@ -197,6 +205,11 @@ mod tests {
 
     #[entity]
     pub struct MyEntityB {
+        pub my_value: u32,
+    }
+
+    #[entity]
+    pub struct MyEntityC {
         pub my_value: u32,
     }
 
@@ -245,24 +258,26 @@ mod tests {
         let mut scene = Scene::new();
 
         let first_id = scene.add_entity(MyEntityA { attachement_id: None, my_value: 1 });
-        let second_id = scene.add_entity(MyEntityA { attachement_id: None, my_value: 2 });
-        let third_id = scene.add_entity(MyEntityA { attachement_id: None, my_value: 3 });
+        let second_id = scene.add_entity(MyEntityB { attachement_id: None, my_value: 2 });
+        let third_id = scene.add_entity(MyEntityC { attachement_id: None, my_value: 3 });
 
-        scene.attach_entities::<MyEntityA, MyEntityA>(first_id, second_id).unwrap();
-        scene.attach_entities::<MyEntityA, MyEntityA>(first_id, third_id).unwrap();
+        scene.attach_entities::<MyEntityA, MyEntityB>(first_id, second_id).unwrap();
+        scene.attach_entities::<MyEntityA, MyEntityC>(first_id, third_id).unwrap();
 
-        let result_id = scene.get_attached_entity::<MyEntityA, MyEntityA>(first_id).unwrap();
+        {
+            let result_id = scene.get_attached_entity::<MyEntityA, MyEntityB>(first_id).unwrap();
+            let entities = scene.get_entities::<MyEntityB>().unwrap();
+            let result = entities.get(result_id).unwrap();
+    
+            assert_eq!(2, result.my_value);
+        }
 
-        let entities = scene.get_entities::<MyEntityA>().unwrap();
-        let result = entities.get(result_id).unwrap();
-
-        assert_eq!(69, result.my_value);
-    }
-
-    #[test]
-    fn insert_with_key() {
-        let mut sm = DenseSlotMap::new();
-        let key = sm.insert_with_key(|k| (k, 20));
-        assert_eq!(sm[key], (key, 20));
+        {
+            let result_id = scene.get_attached_entity::<MyEntityA, MyEntityC>(first_id).unwrap();
+            let entities = scene.get_entities::<MyEntityC>().unwrap();
+            let result = entities.get(result_id).unwrap();
+    
+            assert_eq!(3, result.my_value);
+        }
     }
 }
