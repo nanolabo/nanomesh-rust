@@ -152,8 +152,36 @@ impl Scene {
         Ok(())
     }
 
-    fn delete_entity<T: Entity+'static>(&mut self, entity_a: T, entity_b: T) {
-        // Todo
+    fn delete_entity<T: Entity+'static>(&mut self, entity_id: EntityId) -> Result<(), ()> {
+        let mut entities = self.get_entities_mut::<T>().unwrap();
+        match entities.get(entity_id) {
+            Some(entity) => {
+                match entity.get_attachement_id() {
+                    Some(attachement_id) => {
+                        let mut attachements = self.get_entities_mut::<Attachment>().unwrap();
+                        let mut current_attachement = attachements.get_mut(attachement_id).unwrap();
+                        let first_attachement = current_attachement.clone();
+                        loop {
+                            if current_attachement.attached_entity_type == T::get_id() && current_attachement.attached_entity == entity_id {
+                                // Remap attachements
+                                current_attachement.next_attachement = first_attachement.next_attachement;
+                                current_attachement.attached_entity_type = first_attachement.attached_entity_type;
+                                current_attachement.attached_entity = first_attachement.attached_entity;
+                                break;
+                            }
+                            // Next round
+                            let k = current_attachement.next_attachement;
+                            current_attachement = attachements.get_mut(k).unwrap();
+                        }
+                        attachements.remove(attachement_id);
+                    },
+                    None => {}
+                }
+                entities.remove(entity_id);
+                Ok(())
+            },
+            None => Err(())
+        }
     }
 
     fn get_attached_entity<TA: Entity+'static, TB: Entity+'static>(&mut self, entity_id: EntityId) -> Option<EntityId> {
@@ -323,5 +351,36 @@ mod tests {
 
         // There is no MyEntityB attached!
         assert_eq!(None, scene.get_attached_entity::<MyEntityA, MyEntityB>(a_id));
+    }
+
+    #[test]
+    fn can_attach_three_entities_dd() {
+        let mut scene = Scene::new();
+
+        let first_id = scene.add_entity(MyEntityA { attachement_id: None, my_value: 1 });
+        let second_id = scene.add_entity(MyEntityB { attachement_id: None, my_value: 2 });
+        let third_id = scene.add_entity(MyEntityC { attachement_id: None, my_value: 3 });
+
+        scene.attach_entities::<MyEntityA, MyEntityB>(first_id, second_id).unwrap();
+        scene.attach_entities::<MyEntityA, MyEntityC>(first_id, third_id).unwrap();
+
+        // Remove B
+        scene.delete_entity::<MyEntityB>(second_id).unwrap();
+
+        {
+            // Is not attached anymore
+            assert!(scene.get_attached_entity::<MyEntityA, MyEntityB>(first_id).is_none());
+            let entities = scene.get_entities::<MyEntityB>().unwrap();
+            // Entity does not exist anymore
+            assert!(entities.get(first_id).is_none());
+        }
+
+        {
+            let result_id = scene.get_attached_entity::<MyEntityA, MyEntityC>(first_id).unwrap();
+            let entities = scene.get_entities::<MyEntityC>().unwrap();
+            let result = entities.get(result_id).unwrap();
+    
+            assert_eq!(3, result.my_value);
+        }
     }
 }
