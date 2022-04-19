@@ -1,3 +1,4 @@
+#[cfg(feature = "webp")]
 pub mod r#unsafe;
 
 pub mod simple_hasher;

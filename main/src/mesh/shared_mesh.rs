@@ -1,3 +1,6 @@
+use crate::base::Vector3;
+use super::Group;
+
 pub struct SharedMesh {
     pub groups: Vec<Group>,
     pub triangles: Vec<u32>,

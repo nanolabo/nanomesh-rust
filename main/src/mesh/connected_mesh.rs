@@ -293,11 +293,6 @@ impl ConnectedMesh {
 
 include!("decimate/decimate.rs");
 
-pub struct Group {
-    first_index: u32,
-    index_count: u32,
-}
-
 #[derive(Debug, Copy, Clone)]
 pub struct Node {
     sibling: u32,

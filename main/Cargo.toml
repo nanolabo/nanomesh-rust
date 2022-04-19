@@ -8,6 +8,9 @@ edition = "2018"
 name = "nanomesh"
 path = "src/lib.rs"
 
+[features]
+interop = []
+
 # [[example]]
 # name = "decimate"
 # path = "samples/decimate.rs"
