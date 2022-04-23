@@ -39,6 +39,15 @@
         var array = new Uint8Array(await readFile(file));
         console.log(array);
         console.log(read_obj(array));
+
+        // Download result back
+        var blob = new Blob([array], { type: "application/pdf" }); // change resultByte to bytes
+        var link = document.createElement("a");
+        link.href = window.URL.createObjectURL(blob);
+        link.download = "output.obj";
+        link.click();
+
+        console.log("click");
       }
 
       init();
