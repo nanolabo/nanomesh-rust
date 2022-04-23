@@ -1,9 +1,14 @@
 // cargo install wasm-pack
 // wasm-pack build
+// wasm-pack build --release --target web
 
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
-pub fn add(n1 : i32, n2: i32) -> i32 {
-  return n1 + n2;
+pub fn read_obj(bytes: &[u8]) -> i32 {
+  let mut sum = 0i32;
+  for i in 0..bytes.len() {
+    sum += bytes[i] as i32;
+  }
+  return sum;
 }

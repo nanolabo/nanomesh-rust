@@ -251,7 +251,7 @@ mod tests {
     }
 
     #[test]
-    fn can_add_retreive_entity() {
+    fn add_retreive_entity() {
         let mut scene = Scene::new();
         let entity_id = scene.add_entity(MyEntityA { attachement_id: None, my_value: 123 });
 
@@ -262,7 +262,7 @@ mod tests {
     }
 
     #[test]
-    fn can_add_similar_entities() {
+    fn add_similar_entities() {
         let mut scene = Scene::new();
 
         for i in 0..1000000 {
@@ -274,7 +274,7 @@ mod tests {
     }
 
     #[test]
-    fn can_attach_two_entities() {
+    fn attach_two_entities() {
         let mut scene = Scene::new();
 
         let a_id = scene.add_entity(MyEntityA { attachement_id: None, my_value: 42 });
@@ -291,7 +291,7 @@ mod tests {
     }
 
     #[test]
-    fn can_attach_three_entities() {
+    fn attach_three_entities() {
         let mut scene = Scene::new();
 
         let first_id = scene.add_entity(MyEntityA { attachement_id: None, my_value: 1 });
@@ -354,7 +354,7 @@ mod tests {
     }
 
     #[test]
-    fn can_attach_three_entities_dd() {
+    fn delete_entity() {
         let mut scene = Scene::new();
 
         let first_id = scene.add_entity(MyEntityA { attachement_id: None, my_value: 1 });

@@ -1,0 +1,52 @@
+<!--python3 -m http.server-->
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Nanolabo WASM</title>
+  </head>
+  <body>
+    <form>
+      <div>
+        <input type="file" id="input" />
+      </div>
+    </form>
+
+    <script type="module">
+      import init, { read_obj } from "./nanolabo_wasm.js";
+
+      const input = document.querySelector("input");
+
+      function readFile(file) {
+        return new Promise((resolve, reject) => {
+          // Create file reader
+          let reader = new FileReader();
+
+          // Register event listeners
+          reader.addEventListener("loadend", (e) => resolve(e.target.result));
+          reader.addEventListener("error", reject);
+
+          // Read file
+          reader.readAsArrayBuffer(file);
+        });
+      }
+
+      // https://localcoder.org/passing-client-files-to-webassembly-from-the-front-end
+      async function handleFile() {
+        var file = this.files[0];
+        // Todo: Stop copying in a JS buffer, instead copy direct to a wasm buffer
+        // https://wasmbyexample.dev/examples/webassembly-linear-memory/webassembly-linear-memory.rust.en-us.html#
+        var array = new Uint8Array(await readFile(file));
+        console.log(array);
+        console.log(read_obj(array));
+      }
+
+      init();
+
+      let ipt = document.getElementById("input");
+      console.log(ipt);
+      ipt.onchange = handleFile;
+      //init();
+    </script>
+  </body>
+</html>
