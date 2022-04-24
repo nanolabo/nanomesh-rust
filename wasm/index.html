@@ -13,7 +13,8 @@
     </form>
 
     <script type="module">
-      import init, { read_obj } from "./nanolabo_wasm.js";
+      //const wasm = import("./nanolabo_wasm.js");
+      import init, { read_obj } from "./pkg/nanolabo_wasm.js";
 
       const input = document.querySelector("input");
 
@@ -55,7 +56,6 @@
       let ipt = document.getElementById("input");
       console.log(ipt);
       ipt.onchange = handleFile;
-      //init();
     </script>
   </body>
 </html>
