@@ -8,7 +8,7 @@ pub struct ConnectedMesh {
     face_count: u32,
 
     positions: Vec<Vector3>,
-    normals: Vec<Vector3>,
+    normals: Option<Vec<Vector3>>,
     // uv0: Vec<Vector3>,
     // colors: Vec<Vector3>,
 }
@@ -17,9 +17,10 @@ impl Default for ConnectedMesh {
     fn default() -> ConnectedMesh {
         ConnectedMesh { 
             positions: Vec::new(),
-            normals: Vec::new(),
+            normals: None,
             nodes: Vec::new(),
-            face_count: 0 }
+            face_count: 0
+        }
     }
 }
 
@@ -252,13 +253,16 @@ impl ConnectedMesh {
                     if pos_c == pos_b {
                         faces_attached = faces_attached + 1;
     
-                        if self.normals.len() > 0 {
-                            if attribute_at_b != u32::MAX && self.normals[attribute_at_b as usize] == self.normals[self.nodes[relative_of_a as usize].normal as usize] {
-                                edge_weight = edge_weight + 10.0
-                            }
-                            if attribute_at_a != u32::MAX && self.normals[attribute_at_a as usize] == self.normals[self.nodes[sibling_of_a as usize].normal as usize] {
-                                edge_weight = edge_weight + 10.0
-                            }
+                        match &self.normals {
+                            Some(normals) => {
+                                if attribute_at_b != u32::MAX && normals[attribute_at_b as usize] == normals[self.nodes[relative_of_a as usize].normal as usize] {
+                                    edge_weight = edge_weight + 10.0
+                                }
+                                if attribute_at_a != u32::MAX && normals[attribute_at_a as usize] == normals[self.nodes[sibling_of_a as usize].normal as usize] {
+                                    edge_weight = edge_weight + 10.0
+                                }
+                            },
+                            None => ()
                         }
     
                         attribute_at_b = self.nodes[relative_of_a as usize].normal;
@@ -288,11 +292,6 @@ impl ConnectedMesh {
 }
 
 include!("decimate/decimate.rs");
-
-pub struct Group {
-    first_index: u32,
-    index_count: u32,
-}
 
 #[derive(Debug, Copy, Clone)]
 pub struct Node {
@@ -377,7 +376,7 @@ mod connected_mesh_tests {
         let connected_mesh = ConnectedMesh { 
             positions: positions,
             nodes: nodes,
-            normals: Vec::new(),
+            normals: None,
             face_count: 6 };
 
         // Verify connectivity

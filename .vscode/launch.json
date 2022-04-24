@@ -1,0 +1,176 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'nanomesh'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=nanomesh"
+                ],
+                "filter": {
+                    "name": "nanomesh",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'decimate'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=decimate",
+                    "--package=nanomesh"
+                ],
+                "filter": {
+                    "name": "decimate",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'decimate'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=decimate",
+                    "--package=nanomesh"
+                ],
+                "filter": {
+                    "name": "decimate",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'nanoview'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=nanoview"
+                ],
+                "filter": {
+                    "name": "nanoview",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'nanoview2'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=nanoview2"
+                ],
+                "filter": {
+                    "name": "nanoview2",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'demo'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=demo",
+                    "--package=nanoview2"
+                ],
+                "filter": {
+                    "name": "demo",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'demo'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=demo",
+                    "--package=nanoview2"
+                ],
+                "filter": {
+                    "name": "demo",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'decimation-benchmark'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=decimation-benchmark",
+                    "--package=decimation-benchmark"
+                ],
+                "filter": {
+                    "name": "decimation-benchmark",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'decimation-benchmark'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=decimation-benchmark",
+                    "--package=decimation-benchmark"
+                ],
+                "filter": {
+                    "name": "decimation-benchmark",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

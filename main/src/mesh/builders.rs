@@ -105,13 +105,16 @@ impl From<&ConnectedMesh> for SharedMesh {
             positions[*value as usize] = connected_mesh.positions[key[0] as usize];
         }
 
-        let mut normals = Vec::new();
-        if connected_mesh.normals.len() > 0 {
-            normals = vec![Vector3::default(); per_vertex_map.len()];
-            for (key, value) in &per_vertex_map {
-                normals[*value as usize] = connected_mesh.normals[key[1] as usize];
-            }
-        }
+        let normals = match &connected_mesh.normals {
+            Some(cm_normals) => {
+                let mut snormals = vec![Vector3::default(); per_vertex_map.len()];
+                for (key, value) in &per_vertex_map {
+                    snormals[*value as usize] = cm_normals[key[1] as usize];
+                }
+                Some(snormals)
+            },
+            None => None,
+        };
 
         return SharedMesh {
             positions: positions,
@@ -124,48 +127,6 @@ impl From<&ConnectedMesh> for SharedMesh {
 impl Into<SharedMesh> for ConnectedMesh {
     fn into(self) -> SharedMesh {
         return SharedMesh::from(&self);
-    }
-}
-
-impl From<&SharedMesh> for UnsafeMesh {
-    fn from(shared_mesh: &SharedMesh) -> Self {
-        unsafe {
-            return UnsafeMesh {
-                positions_ptr: vec_to_ptr(&shared_mesh.positions),
-                positions_len: shared_mesh.positions.len() as i32,
-                normals_ptr: vec_to_ptr(&shared_mesh.normals),
-                normals_len: shared_mesh.normals.len() as i32,
-                triangles_ptr: vec_to_ptr(&shared_mesh.triangles),
-                triangles_len: shared_mesh.triangles.len() as i32,
-                groups_ptr: vec_to_ptr(&shared_mesh.groups),
-                groups_len: shared_mesh.positions.len() as i32,
-            };
-        }
-    }
-}
-
-impl Into<SharedMesh> for UnsafeMesh {
-    fn into(self) -> SharedMesh {
-        return SharedMesh::from(&self);
-    }
-}
-
-impl From<&UnsafeMesh> for SharedMesh {
-    fn from(unsafe_mesh: &UnsafeMesh) -> Self {
-        unsafe {
-            return SharedMesh {
-                positions: ptr_to_vec(unsafe_mesh.positions_ptr, unsafe_mesh.positions_len as usize),
-                triangles: ptr_to_vec(unsafe_mesh.triangles_ptr, unsafe_mesh.triangles_len as usize),
-                normals: ptr_to_vec(unsafe_mesh.normals_ptr, unsafe_mesh.normals_len as usize),
-                groups: ptr_to_vec(unsafe_mesh.groups_ptr, unsafe_mesh.groups_len as usize),
-            };
-        }
-    }
-}
-
-impl Into<UnsafeMesh> for SharedMesh {
-    fn into(self) -> UnsafeMesh {
-        return UnsafeMesh::from(&self);
     }
 }
 
@@ -196,10 +157,10 @@ mod builder_tests {
         triangles.push(3);
 
         let shared_mesh = SharedMesh { 
-            positions: positions,
+            groups: Vec::new(),
             triangles: triangles,
-            normals: Vec::new(),
-            groups: Vec::new() 
+            positions: positions,
+            normals: None,
         };
 
         let connected_mesh = ConnectedMesh::from(&shared_mesh);
@@ -236,16 +197,16 @@ mod builder_tests {
         positions.push(Vector3::new(0., 1., 0.));
 
         let mut nodes = Vec::new();
-        nodes.push(Node { position: 0, normal: 0, sibling: 3, relative: 1, is_removed: false });
-        nodes.push(Node { position: 1, normal: 0, sibling: 1, relative: 2, is_removed: false }); // sibling is itself
-        nodes.push(Node { position: 2, normal: 0, sibling: 4, relative: 0, is_removed: false });
-        nodes.push(Node { position: 0, normal: 0, sibling: 0, relative: 4, is_removed: false });
-        nodes.push(Node { position: 2, normal: 0, sibling: 2, relative: 5, is_removed: false });
-        nodes.push(Node { position: 3, normal: 0, sibling: 5, relative: 3, is_removed: false }); // sibling is itself
+        nodes.push(Node::from_layout(0, 3, 1));
+        nodes.push(Node::from_layout(1, 1, 2)); // sibling is itself
+        nodes.push(Node::from_layout(2, 4, 0));
+        nodes.push(Node::from_layout(0, 0, 4));
+        nodes.push(Node::from_layout(2, 2, 5));
+        nodes.push(Node::from_layout(3, 5, 3)); // sibling is itself
 
         let connected_mesh = ConnectedMesh {
             positions: positions,
-            normals: Vec::new(),
+            normals: None,
             nodes: nodes,
             face_count: 2,
         };

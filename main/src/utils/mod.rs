@@ -1,3 +1,4 @@
+#[cfg(feature = "interop")]
 pub mod r#unsafe;
 
 pub mod simple_hasher;
