@@ -4,56 +4,16 @@
 <html>
   <head>
     <title>Nanolabo WASM</title>
+    <link rel="stylesheet" href="style.css" />
+    <script type="module" src="nanolabo.js"></script>
   </head>
   <body>
-    <form>
-      <div>
-        <input type="file" id="input" />
-      </div>
-    </form>
-
-    <script type="module">
-      //const wasm = import("./nanolabo_wasm.js");
-      import init, { read_obj } from "./pkg/nanolabo_wasm.js";
-
-      const input = document.querySelector("input");
-
-      function readFile(file) {
-        return new Promise((resolve, reject) => {
-          // Create file reader
-          let reader = new FileReader();
-
-          // Register event listeners
-          reader.addEventListener("loadend", (e) => resolve(e.target.result));
-          reader.addEventListener("error", reject);
-
-          // Read file
-          reader.readAsArrayBuffer(file);
-        });
-      }
-
-      // https://localcoder.org/passing-client-files-to-webassembly-from-the-front-end
-      async function handleFile() {
-        var file = this.files[0];
-        // Todo: Stop copying in a JS buffer, instead copy direct to a wasm buffer
-        // https://wasmbyexample.dev/examples/webassembly-linear-memory/webassembly-linear-memory.rust.en-us.html#
-        var array = new Uint8Array(await readFile(file));
-        console.log(array);
-        var result = read_obj(array);
-
-        // Download result back
-        var blob = new Blob([result], { type: "application/pdf" }); // change resultByte to bytes
-        var link = document.createElement("a");
-        link.href = window.URL.createObjectURL(blob);
-        link.download = "output.obj";
-        link.click();
-      }
-
-      init();
-
-      let ipt = document.getElementById("input");
-      console.log(ipt);
-      ipt.onchange = handleFile;
-    </script>
+    <div id="drag-area" class="drag-area">
+      <div class="icon"><i class="fas fa-cloud-upload-alt"></i></div>
+      <header>Drag & drop to process model</header>
+      <span>OR</span>
+      <button>Browse File</button>
+      <input type="file" hidden multiple />
+    </div>
   </body>
 </html>
