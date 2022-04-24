@@ -164,8 +164,8 @@ impl ConnectedMesh {
             let pos_b = &connected_mesh.positions[edge.pos_b as usize];
             let pos_c = &(&(pos_a + pos_b) / 2.0);
 
-            let node_a = *position_to_node.get(&edge.pos_a).unwrap();
-            let node_b = *position_to_node.get(&edge.pos_b).unwrap();
+            //let node_a = *position_to_node.get(&edge.pos_a).unwrap();
+            //let node_b = *position_to_node.get(&edge.pos_b).unwrap();
 
             let matrix = &quadrics[edge.pos_a as usize] + &quadrics[edge.pos_b as usize];
 
@@ -188,7 +188,7 @@ impl ConnectedMesh {
 
             // We multiply by edge length to be agnotics with quadrics error.
             // Otherwise it becomes too scale dependent
-            let length = (pos_b - pos_a).magnitude();
+            //let length = (pos_b - pos_a).magnitude();
 
             // loop_edges!(node_a, edge_buffer, &connected_mesh.nodes, relative, {
             //     let pos_d_index = connected_mesh.nodes[relative as usize].position;

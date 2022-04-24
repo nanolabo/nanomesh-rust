@@ -1,32 +1,29 @@
 use super::super::base::Vector3;
 use super::super::mesh::SharedMesh;
 
-use std::fs::File;
-use std::path::Path;
+use std::io::BufWriter;
+use std::io::BufReader;
 use std::io::prelude::*;
-use std::io::LineWriter;
 
-pub fn read(path: &str) -> SharedMesh {
+pub fn read<T: Read>(reader: &mut BufReader<T>) -> SharedMesh {
 
     let mut positions = Vec::<Vector3>::new();
     let mut triangles = Vec::<u32>::new();
 
-    if let Ok(lines) = read_lines(path) {
-        for line in lines {
-            if let Ok(l) = line {
-                let split = l.split(" ").collect::<Vec<&str>>();
-                match split[0] {
-                    "v" => {
-                        let position = Vector3::new(split[1].parse::<f64>().unwrap(), split[2].parse::<f64>().unwrap(), split[3].parse::<f64>().unwrap());
-                        positions.push(position);
-                    },
-                    "f" => {
-                        triangles.push(split[1].parse::<u32>().unwrap() - 1);
-                        triangles.push(split[2].parse::<u32>().unwrap() - 1);
-                        triangles.push(split[3].parse::<u32>().unwrap() - 1);
-                    },
-                    _ => ()
-                }
+    for line in reader.lines() {
+        if let Ok(l) = line {
+            let split = l.split(" ").collect::<Vec<&str>>();
+            match split[0] {
+                "v" => {
+                    let position = Vector3::new(split[1].parse::<f64>().unwrap(), split[2].parse::<f64>().unwrap(), split[3].parse::<f64>().unwrap());
+                    positions.push(position);
+                },
+                "f" => {
+                    triangles.push(split[1].parse::<u32>().unwrap() - 1);
+                    triangles.push(split[2].parse::<u32>().unwrap() - 1);
+                    triangles.push(split[3].parse::<u32>().unwrap() - 1);
+                },
+                _ => ()
             }
         }
     }
@@ -39,24 +36,27 @@ pub fn read(path: &str) -> SharedMesh {
     }
 }
 
-// The output is wrapped in a Result to allow matching on errors
-// Returns an Iterator to the Reader of the lines of the file.
-fn read_lines<P>(filename: P) -> std::io::Result<std::io::Lines<std::io::BufReader<File>>> where P: AsRef<Path>, {
-    let file = File::open(filename)?;
-    Ok(std::io::BufReader::new(file).lines())
-}
+pub fn write<T: Write>(shared_mesh: &SharedMesh, writer: &mut BufWriter<T>) {
 
-pub fn write(shared_mesh: SharedMesh, path: &str) {
-
-    let file = File::create(path).unwrap();
-    let mut file = LineWriter::new(file);
+    macro_rules! write {
+        () => {{
+            writer.write("\n".as_bytes()).unwrap();
+        }};
+        ($text:expr) => {{
+            writer.write($text.as_bytes()).unwrap();
+            write!();
+        }};
+        ($text:expr, $($args:expr), *) => {{
+            writer.write(format!($text, $($args), *).as_bytes()).unwrap();
+            write!();
+        }}
+    }
 
     for i in 0..shared_mesh.positions.len() {
-        file.write_all(format!("v {} {} {}\n", shared_mesh.positions[i].x, shared_mesh.positions[i].y, shared_mesh.positions[i].z).as_bytes()).unwrap();
-    }
-    for i in (0..shared_mesh.triangles.len()).step_by(3) {
-        file.write_all(format!("f {} {} {}\n", shared_mesh.triangles[i] + 1, shared_mesh.triangles[i + 1] + 1, shared_mesh.triangles[i + 2] + 1).as_bytes()).unwrap();
+        write!("v {} {} {}", shared_mesh.positions[i].x, shared_mesh.positions[i].y, shared_mesh.positions[i].z);
     }
 
-    file.flush().unwrap();
+    for i in (0..shared_mesh.triangles.len()).step_by(3) {
+        write!("f {} {} {}", shared_mesh.triangles[i] + 1, shared_mesh.triangles[i + 1] + 1, shared_mesh.triangles[i + 2] + 1);
+    }
 }

@@ -5,7 +5,6 @@ This scene is an memory efficient ECS system
 use slotmap::*;
 use std::collections::HashMap;
 use std::cell::{RefCell, Ref, RefMut};
-use std::thread::current;
 use super::{EntityId};
 use nanomesh_macros::entity;
 
@@ -37,11 +36,11 @@ pub struct Scene {
 
 impl Scene {
 
-    fn new() -> Self {
+    pub fn new() -> Self {
         Scene { entities_per_type: HashMap::new() }
     }
 
-    fn get_entities_mut<T: Entity+'static>(&self) -> Option<RefMut<Arena<T>>> {
+    pub fn get_entities_mut<T: Entity+'static>(&self) -> Option<RefMut<Arena<T>>> {
         match self.entities_per_type.get(&T::get_id()) {
             Some(vec) => {
                 let any = vec.as_any();
@@ -52,7 +51,7 @@ impl Scene {
         }
     }
 
-    fn get_entities<T: Entity+'static>(&self) -> Option<Ref<Arena<T>>> {
+    pub fn get_entities<T: Entity+'static>(&self) -> Option<Ref<Arena<T>>> {
         match self.entities_per_type.get(&T::get_id()) {
             Some(vec) => {
                 let any = vec.as_any();
@@ -63,7 +62,7 @@ impl Scene {
         }
     }
 
-    fn add_entity<T: Entity+'static>(&mut self, entity: T) -> EntityId {
+    pub fn add_entity<T: Entity+'static>(&mut self, entity: T) -> EntityId {
         match self.entities_per_type.get_mut(&T::get_id()) {
             Some(vec) => {
                 let any = vec.as_any();
@@ -81,7 +80,7 @@ impl Scene {
 
     /// Attach two entities together. If entities were already attached, they will end up be attached as well.
     /// ⚠️ Avoid attaching several entities of the same type. This will result in undefined behaviour
-    fn attach_entities<TA: Entity+'static, TB: Entity+'static>(&mut self, entity_id_a: EntityId, entity_id_b: EntityId) -> Result<(), ()> {
+    pub fn attach_entities<TA: Entity+'static, TB: Entity+'static>(&mut self, entity_id_a: EntityId, entity_id_b: EntityId) -> Result<(), ()> {
 
         // Make sure we can handle attachements
         if self.get_entities_mut::<Attachment>().is_none() {
@@ -152,7 +151,7 @@ impl Scene {
         Ok(())
     }
 
-    fn delete_entity<T: Entity+'static>(&mut self, entity_id: EntityId) -> Result<(), ()> {
+    pub fn delete_entity<T: Entity+'static>(&mut self, entity_id: EntityId) -> Result<(), ()> {
         let mut entities = self.get_entities_mut::<T>().unwrap();
         match entities.get(entity_id) {
             Some(entity) => {
@@ -184,7 +183,7 @@ impl Scene {
         }
     }
 
-    fn get_attached_entity<TA: Entity+'static, TB: Entity+'static>(&mut self, entity_id: EntityId) -> Option<EntityId> {
+    pub fn get_attached_entity<TA: Entity+'static, TB: Entity+'static>(&mut self, entity_id: EntityId) -> Option<EntityId> {
         let entities_a = self.get_entities::<TA>().unwrap();
         let entity = entities_a.get(entity_id).unwrap();
         match self.get_entities::<Attachment>() {
