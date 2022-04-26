@@ -1,4 +1,4 @@
-import init, { read_obj } from "./pkg/nanolabo_wasm.js";
+import init, { Parameters, read_obj } from "./pkg/nanolabo_wasm.js";
 
 function readFile(file) {
   return new Promise((resolve, reject) => {
@@ -16,11 +16,16 @@ function readFile(file) {
 
 // https://localcoder.org/passing-client-files-to-webassembly-from-the-front-end
 async function handleFile(file) {
+  var parameters = new Parameters();
+  parameters.export_format = 25;
+  parameters.polygon_reduction = 0.5;
+
   // Todo: Stop copying in a JS buffer, instead copy direct to a wasm buffer
   // https://wasmbyexample.dev/examples/webassembly-linear-memory/webassembly-linear-memory.rust.en-us.html#
   var array = new Uint8Array(await readFile(file));
   console.log(array);
-  var result = read_obj(array);
+  var result = read_obj(parameters, array);
+  console.log("Output size: " + result.length);
 
   // Download result back
   var blob = new Blob([result], { type: "application/pdf" }); // change resultByte to bytes
@@ -70,13 +75,13 @@ dropArea.ondrop = function (event) {
 };
 
 function showFile(files) {
-  let validExtensions = ["obj"]; // Adding some valid image extensions in array
+  let validExtensions = ["obj", "step", "stp"]; // Adding some valid image extensions in array
 
   for (var i = 0; i < files.length; i++) {
     console.log(files[i]);
-    let format = files[i].name.split(".").pop();
+    let format = files[i].name.split(".").pop().toLowerCase();
     if (!validExtensions.includes(format)) {
-      alert("This is not a supported file format!");
+      alert(`"${format}" is not a supported file format!`);
       dropArea.classList.remove("active");
       dragText.textContent = "Drag & Drop to Upload File";
       return;
