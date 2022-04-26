@@ -1,4 +1,4 @@
-use super::base::Vector3;
+use super::base::DVec3;
 use super::utils::*;
 
 use std::hash::BuildHasherDefault;

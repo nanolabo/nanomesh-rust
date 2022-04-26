@@ -12,7 +12,7 @@ body {
   background: #5256ad;
 }
 .drag-area {
-  border: 2px dashed #fff;
+  border: 4px dashed #fff;
   height: 500px;
   width: 700px;
   border-radius: 5px;

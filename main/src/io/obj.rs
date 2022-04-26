@@ -1,4 +1,4 @@
-use super::super::base::Vector3;
+use super::super::base::DVec3;
 use super::super::mesh::SharedMesh;
 
 use std::io::BufWriter;
@@ -7,7 +7,7 @@ use std::io::prelude::*;
 
 pub fn read<T: Read>(reader: &mut BufReader<T>) -> SharedMesh {
 
-    let mut positions = Vec::<Vector3>::new();
+    let mut positions = Vec::<DVec3>::new();
     let mut triangles = Vec::<u32>::new();
 
     for line in reader.lines() {
@@ -15,7 +15,7 @@ pub fn read<T: Read>(reader: &mut BufReader<T>) -> SharedMesh {
             let split = l.split(" ").collect::<Vec<&str>>();
             match split[0] {
                 "v" => {
-                    let position = Vector3::new(split[1].parse::<f64>().unwrap(), split[2].parse::<f64>().unwrap(), split[3].parse::<f64>().unwrap());
+                    let position = DVec3::new(split[1].parse::<f64>().unwrap(), split[2].parse::<f64>().unwrap(), split[3].parse::<f64>().unwrap());
                     positions.push(position);
                 },
                 "f" => {

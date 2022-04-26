@@ -100,14 +100,14 @@ impl From<&ConnectedMesh> for SharedMesh {
             });
         }
 
-        let mut positions = vec![Vector3::default(); per_vertex_map.len()];
+        let mut positions = vec![DVec3::default(); per_vertex_map.len()];
         for (key, value) in &per_vertex_map {
             positions[*value as usize] = connected_mesh.positions[key[0] as usize];
         }
 
         let normals = match &connected_mesh.normals {
             Some(cm_normals) => {
-                let mut snormals = vec![Vector3::default(); per_vertex_map.len()];
+                let mut snormals = vec![DVec3::default(); per_vertex_map.len()];
                 for (key, value) in &per_vertex_map {
                     snormals[*value as usize] = cm_normals[key[1] as usize];
                 }
@@ -141,10 +141,10 @@ mod builder_tests {
         
         let mut positions = Vec::new();
         // Build a square
-        positions.push(Vector3::new(0., 0., 0.));
-        positions.push(Vector3::new(1., 0., 0.));
-        positions.push(Vector3::new(1., 1., 0.));
-        positions.push(Vector3::new(0., 1., 0.));
+        positions.push(DVec3::new(0., 0., 0.));
+        positions.push(DVec3::new(1., 0., 0.));
+        positions.push(DVec3::new(1., 1., 0.));
+        positions.push(DVec3::new(0., 1., 0.));
 
         let mut triangles = Vec::new();
         // First triangle
@@ -191,10 +191,10 @@ mod builder_tests {
 
         let mut positions = Vec::new();
         // Build a square
-        positions.push(Vector3::new(0., 0., 0.));
-        positions.push(Vector3::new(1., 0., 0.));
-        positions.push(Vector3::new(1., 1., 0.));
-        positions.push(Vector3::new(0., 1., 0.));
+        positions.push(DVec3::new(0., 0., 0.));
+        positions.push(DVec3::new(1., 0., 0.));
+        positions.push(DVec3::new(1., 1., 0.));
+        positions.push(DVec3::new(0., 1., 0.));
 
         let mut nodes = Vec::new();
         nodes.push(Node::from_layout(0, 3, 1));

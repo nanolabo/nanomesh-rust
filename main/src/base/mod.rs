@@ -1,5 +1,8 @@
-pub mod vector3;
-pub use vector3::Vector3 as Vector3; 
+pub mod dvec3;
+pub use dvec3::DVec3 as DVec3;
+
+pub mod u32vec3;
+pub use u32vec3::U32Vec3 as U32Vec3; 
 
 pub mod box3;
 pub use box3::Box3 as Box3; 

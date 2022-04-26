@@ -1,9 +1,9 @@
-use crate::base::Vector3;
+use crate::base::DVec3;
 use super::Group;
 
 pub struct SharedMesh {
     pub groups: Vec<Group>,
     pub triangles: Vec<u32>,
-    pub positions: Vec<Vector3>,
-    pub normals: Option<Vec<Vector3>>,
+    pub positions: Vec<DVec3>,
+    pub normals: Option<Vec<DVec3>>,
 }
