@@ -287,7 +287,7 @@ impl ConnectedMesh {
         let pos_a = &self.positions[node_a.position as usize];
         let pos_b = &self.positions[node_b.position as usize];
         let pos_c = &self.positions[node_c.position as usize];
-        (&(pos_b - pos_a) ^ &(pos_c - pos_a)).normalized()
+        (&(pos_b - pos_a).cross(&(pos_c - pos_a))).normalize()
     }
 }
 

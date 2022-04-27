@@ -17,6 +17,7 @@ interop = []
 
 [dependencies]
 nanomesh_macros = { path = "../macros" }
+nalgebra-glm = "0.13.0"
 assert_approx_eq = "1.1.0"
 libc = "0.2.102"
 hashbrown = "0.3"

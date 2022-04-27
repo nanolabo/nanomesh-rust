@@ -1,4 +1,6 @@
-use super::dvec3::DVec3;
+use nalgebra_glm as glm;
+use glm::{DVec3};
+
 use std::ops::*;
 use std::fmt::*;
 

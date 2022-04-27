@@ -2,9 +2,10 @@ use std::f64::{EPSILON, consts::PI};
 
 use nalgebra_glm as glm;
 use glm::{DVec2, DVec3, DVec4, DMat4};
+use nanomesh::mesh::SharedMesh;
 
 use nurbs::{AbstractSurface, NDBSplineSurface, SampledSurface};
-use crate::{Error, mesh::Vertex};
+use crate::{Error};
 
 // Represents a surface in 3D space, with a function to project a 3D point
 // on the surface down to a 2D space.
@@ -206,13 +207,13 @@ impl Surface {
         }
     }
 
-    fn prepare(&mut self, verts: &[Vertex]) {
+    fn prepare(&mut self, positions: &[DVec3]) {
         match self {
             Surface::Cylinder { mat_i, z_min, z_max, .. } => {
                 *z_min = std::f64::INFINITY;
                 *z_max = -std::f64::INFINITY;
-                for v in verts {
-                    let p = (*mat_i) * DVec4::new(v.pos.x, v.pos.y, v.pos.z, 1.0);
+                for v in positions {
+                    let p = (*mat_i) * DVec4::new(v.x, v.y, v.z, 1.0);
                     if p.z < *z_min {
                         *z_min = p.z;
                     }
@@ -222,8 +223,8 @@ impl Surface {
                 }
             },
             Surface::Sphere { mat, mat_i, location, .. } => {
-                let ref_direction = (verts[0].pos - *location).normalize();
-                let d1 = (verts.last().unwrap().pos - *location).normalize();
+                let ref_direction = (positions[0] - *location).normalize();
+                let d1 = (positions.last().unwrap() - *location).normalize();
                 let axis = ref_direction.cross(&d1).normalize();
 
                 *mat = Self::make_rigid_transform(
@@ -233,8 +234,8 @@ impl Surface {
                     .expect("Could not invert");
             },
             Surface::Torus { axis, mat, mat_i, location, .. } => {
-                let mean_dir = verts.iter()
-                    .map(|v| v.pos - *location)
+                let mean_dir = positions.iter()
+                    .map(|v| v - *location)
                     .sum::<DVec3>()
                     .normalize();
                 let mean_perp_dir = (mean_dir - *axis * mean_dir.dot(axis)).normalize();
@@ -248,16 +249,15 @@ impl Surface {
         }
     }
 
-    pub fn lower_verts(&mut self, verts: &mut [Vertex])
-        -> Result<Vec<(f64, f64)>, Error>
+    pub fn lower_verts(&mut self, positions: &mut [DVec3], normals: &mut [DVec3]) -> Result<Vec<(f64, f64)>, Error>
     {
-        self.prepare(verts);
-        let mut pts = Vec::with_capacity(verts.len());
-        for v in verts {
+        self.prepare(positions);
+        let mut pts = Vec::with_capacity(normals.len());
+        for i in 0..positions.len() {
             // Project to the 2D subspace for triangulation
-            let proj = self.lower(v.pos)?;
+            let proj = self.lower(positions[i])?;
             // Update the surface normal
-            v.norm = self.normal(v.pos, proj);
+            normals[i] = self.normal(positions[i], proj);
             pts.push((proj.x, proj.y));
         }
         // If this is a BSpline surface, calculate an aspect ratio based on the
@@ -333,8 +333,7 @@ impl Surface {
         (xmin, xmax, ymin, ymax)
     }
 
-    pub fn add_steiner_points(&self, pts: &mut Vec<(f64, f64)>,
-                                     verts: &mut Vec<Vertex>)
+    pub fn add_steiner_points(&self, pts: &mut Vec<(f64, f64)>, positions: &mut Vec<DVec3>, normals: &mut Vec<DVec3>, colors: &mut Vec<DVec3>)
     {
         let (xmin, xmax, ymin, ymax) = Self::bbox(&pts);
         let num_pts = match self {
@@ -353,11 +352,9 @@ impl Surface {
                 let uv = DVec2::new(u, v);
                 if let Some(pos) = self.raise(uv) {
                     pts.push((u, v));
-                    verts.push(Vertex {
-                        pos,
-                        norm: self.normal(pos, uv),
-                        color: DVec3::new(0.0, 0.0, 0.0),
-                    });
+                    positions.push(pos);
+                    normals.push(self.normal(pos, uv));
+                    colors.push(DVec3::new(0.0, 0.0, 0.0));
                 }
             }
         }

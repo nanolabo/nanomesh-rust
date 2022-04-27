@@ -1,6 +1,7 @@
 use super::shared_mesh::SharedMesh;
 use super::Group;
-use crate::base::DVec3;
+use nalgebra_glm as glm;
+use glm::{DVec3};
 use crate::utils::r#unsafe::*;
 
 pub struct UnsafeMesh

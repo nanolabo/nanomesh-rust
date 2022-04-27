@@ -31,33 +31,32 @@ extern {
 #[wasm_bindgen]
 pub fn read_obj(parameters: &Parameters, bytes: &[u8]) -> Vec<u8> {
 
+  set_progress(0., "Reading...");
+
+  //let slice: &[u8] = &bytes[..];
+  //let mut reader = BufReader::new(slice);
+
   use step::step_file::StepFile;
   use triangulate::triangulate::triangulate; // lol
 
   let flat = StepFile::strip_flatten(bytes);
-  let step = StepFile::parse(&flat);
-  let (mut mesh, _stats) = triangulate(&step);
-  let result = mesh.save_stl().unwrap();
 
-  /*
+  set_progress(0.5, "Parsing...");
+
+  let step = StepFile::parse(&flat);
+
+  set_progress(0.5, "Tesselating...");
+
+  let (mut mesh, _stats) = triangulate(&step);
+
   let mut result = Vec::new();
 
-  {
-    set_progress(0., "Reading...");
+  set_progress(0.5, "Writing...");
   
-    let slice: &[u8] = &bytes[..];
-    let mut reader = BufReader::new(slice);
-
-    let mesh = nanomesh::io::obj::read(&mut reader);
-
-    set_progress(0.5, "Writing...");
-    
-    {
-      let mut writer = BufWriter::new(&mut result);
-      nanomesh::io::obj::write(&mesh, &mut writer);
-    }
+  {
+    let mut writer = BufWriter::new(&mut result);
+    nanomesh::io::obj::write(&mesh, &mut writer);
   }
-  */
 
   set_progress(1., "Done!");
   return result;

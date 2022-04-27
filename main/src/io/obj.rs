@@ -1,4 +1,5 @@
-use super::super::base::DVec3;
+use nalgebra_glm as glm;
+use glm::{DVec3, U32Vec3};
 use super::super::mesh::SharedMesh;
 
 use std::io::BufWriter;
@@ -8,7 +9,7 @@ use std::io::prelude::*;
 pub fn read<T: Read>(reader: &mut BufReader<T>) -> SharedMesh {
 
     let mut positions = Vec::<DVec3>::new();
-    let mut triangles = Vec::<u32>::new();
+    let mut triangles = Vec::<U32Vec3>::new();
 
     for line in reader.lines() {
         if let Ok(l) = line {
@@ -19,9 +20,10 @@ pub fn read<T: Read>(reader: &mut BufReader<T>) -> SharedMesh {
                     positions.push(position);
                 },
                 "f" => {
-                    triangles.push(split[1].parse::<u32>().unwrap() - 1);
-                    triangles.push(split[2].parse::<u32>().unwrap() - 1);
-                    triangles.push(split[3].parse::<u32>().unwrap() - 1);
+                    triangles.push(U32Vec3::new(
+                        split[1].parse::<u32>().unwrap() - 1,
+                        split[2].parse::<u32>().unwrap() - 1,
+                        split[3].parse::<u32>().unwrap() - 1));
                 },
                 _ => ()
             }
@@ -33,6 +35,7 @@ pub fn read<T: Read>(reader: &mut BufReader<T>) -> SharedMesh {
         triangles: triangles,
         positions: positions,
         normals: None,
+        colors: None,
     }
 }
 
@@ -56,7 +59,8 @@ pub fn write<T: Write>(shared_mesh: &SharedMesh, writer: &mut BufWriter<T>) {
         write!("v {} {} {}", shared_mesh.positions[i].x, shared_mesh.positions[i].y, shared_mesh.positions[i].z);
     }
 
-    for i in (0..shared_mesh.triangles.len()).step_by(3) {
-        write!("f {} {} {}", shared_mesh.triangles[i] + 1, shared_mesh.triangles[i + 1] + 1, shared_mesh.triangles[i + 2] + 1);
+    for i in 0..shared_mesh.triangles.len() {
+        let triangle = shared_mesh.triangles[i];
+        write!("f {} {} {}", triangle[0] + 1, triangle[1] + 1, triangle[2] + 1);
     }
 }

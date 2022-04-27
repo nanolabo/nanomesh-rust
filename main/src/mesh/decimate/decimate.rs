@@ -141,7 +141,7 @@ impl ConnectedMesh {
             loop_siblings!(node_index, connected_mesh.nodes, sibling, {
                 let face_normal = &connected_mesh.get_face_normal(sibling);
                 let position = &connected_mesh.positions[connected_mesh.nodes[sibling as usize].position as usize];
-                let dot = &-face_normal * position;
+                let dot = &-face_normal.dot(position);
                 matrix += SymmetricMatrix::from_normal(face_normal, &dot);
             });
             quadrics[connected_mesh.nodes[node_index as usize].position as usize] = matrix;

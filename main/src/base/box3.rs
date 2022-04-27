@@ -1,4 +1,5 @@
-use super::dvec3::DVec3;
+use nalgebra_glm as glm;
+use glm::{DVec3};
 use std::fmt::*;
 
 #[derive(Debug, Copy, Clone)]
@@ -29,8 +30,8 @@ impl Box3
 
     pub fn unfitted() -> Self {
         Box3 {
-            min: DVec3 { x: f64::MAX, y: f64::MAX, z: f64::MAX },
-            max: DVec3 { x: f64::MIN, y: f64::MIN, z: f64::MIN }
+            min: DVec3::new(f64::MAX, f64::MAX, f64::MAX),
+            max: DVec3::new(f64::MIN, f64::MIN, f64::MIN)
         }
     }
 }

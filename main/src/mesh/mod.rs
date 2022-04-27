@@ -1,4 +1,5 @@
-use super::base::DVec3;
+use nalgebra_glm as glm;
+use glm::{DVec3, U32Vec3};
 use super::utils::*;
 
 use std::hash::BuildHasherDefault;

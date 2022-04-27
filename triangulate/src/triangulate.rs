@@ -14,11 +14,12 @@ use step::{
 use crate::{
     Error,
     curve::Curve,
-    mesh, mesh::{Mesh, Triangle},
     stats::Stats,
     surface::Surface
 };
 use nurbs::{BSplineSurface, SampledCurve, SampledSurface, NURBSSurface, KnotVector};
+
+use nanomesh::mesh::SharedMesh;
 
 const SAVE_DEBUG_SVGS: bool = false;
 const SAVE_PANIC_SVGS: bool = false;
@@ -63,7 +64,7 @@ fn transform_stack_roots<'a>(transform_stack: &TransformStack<'a>) -> Vec<Repres
         .collect()
 }
 
-pub fn triangulate(s: &StepFile) -> (Mesh, Stats) {
+pub fn triangulate(s: &StepFile) -> (SharedMesh, Stats) {
     let styled_items: Vec<_> = s.0.iter()
         .filter_map(|e| MechanicalDesignGeometricPresentationRepresentation_::try_from_entity(e))
         .flat_map(|m| m.items.iter())
@@ -158,9 +159,9 @@ pub fn triangulate(s: &StepFile) -> (Mesh, Stats) {
 
     let (to_mesh_iter, empty) = {
         #[cfg(feature = "rayon")]
-        { (to_mesh.par_iter(), || (Mesh::default(), Stats::default())) }
+        { (to_mesh.par_iter(), || (SharedMesh::default(), Stats::default())) }
         #[cfg(not(feature = "rayon"))]
-        { (to_mesh.iter(), (Mesh::default(), Stats::default())) }
+        { (to_mesh.iter(), (SharedMesh::default(), Stats::default())) }
     };
     let mesh_fold = to_mesh_iter
         .fold(
@@ -169,7 +170,7 @@ pub fn triangulate(s: &StepFile) -> (Mesh, Stats) {
 
             // Fold operation
             |(mut mesh, mut stats), (id, mats)| {
-                let v_start = mesh.verts.len();
+                let v_start = mesh.positions.len();
                 let t_start = mesh.triangles.len();
                 match &s[*id] {
                     Entity::ManifoldSolidBrep(b) =>
@@ -194,23 +195,27 @@ pub fn triangulate(s: &StepFile) -> (Mesh, Stats) {
                     .unwrap_or(DVec3::new(0.5, 0.5, 0.5));
 
                 // Build copies of the mesh by copying and applying transforms
-                let v_end = mesh.verts.len();
+                let v_end = mesh.positions.len();
                 let t_end = mesh.triangles.len();
                 for mat in &mats[1..] {
                     for v in v_start..v_end {
-                        let p = mesh.verts[v].pos;
+                        let p = mesh.positions[v];
                         let p_h = DVec4::new(p.x, p.y, p.z, 1.0);
                         let pos = (mat * p_h).xyz();
 
-                        let n = mesh.verts[v].norm;
+                        let n = mesh.normals.as_mut().unwrap()[v];
                         let norm = (mat * glm::vec3_to_vec4(&n)).xyz();
 
-                        mesh.verts.push(mesh::Vertex { pos, norm, color });
+                        mesh.positions.push(pos);
+                        mesh.normals.as_mut().unwrap().push(norm);
+                        mesh.colors.as_mut().unwrap().push(color);
                     }
-                    let offset = mesh.verts.len() - v_end;
+                    let offset = mesh.positions.len() - v_end;
                     for t in t_start..t_end {
                         let mut tri = mesh.triangles[t];
-                        tri.verts.add_scalar_mut(offset as u32);
+                        tri[0] += offset as u32;
+                        tri[1] += offset as u32;
+                        tri[2] += offset as u32;
                         mesh.triangles.push(tri);
                     }
                 }
@@ -218,15 +223,16 @@ pub fn triangulate(s: &StepFile) -> (Mesh, Stats) {
                 // Now that we've built all of the other copies of the mesh,
                 // re-use the original mesh and apply the first transform
                 let mat = mats[0];
+                let mut normals = mesh.normals.as_mut().unwrap();
                 for v in v_start..v_end {
-                    let p = mesh.verts[v].pos;
+                    let p = mesh.positions[v];
                     let p_h = DVec4::new(p.x, p.y, p.z, 1.0);
-                    mesh.verts[v].pos = (mat * p_h).xyz();
+                    mesh.positions[v] = (mat * p_h).xyz();
 
-                    let n = mesh.verts[v].norm;
-                    mesh.verts[v].norm = (mat * glm::vec3_to_vec4(&n)).xyz();
+                    let n = normals[v];
+                    normals[v] = (mat * glm::vec3_to_vec4(&n)).xyz();
 
-                    mesh.verts[v].color = color;
+                    mesh.colors.as_mut().unwrap()[v] = color;
                 }
                 (mesh, stats)
             });
@@ -329,7 +335,7 @@ fn axis2_placement_3d(s: &StepFile, t: Id<Axis2Placement3d_>) -> (DVec3, DVec3, 
     (location, axis, ref_direction)
 }
 
-fn shell(s: &StepFile, c: Shell, mesh: &mut Mesh, stats: &mut Stats) {
+fn shell(s: &StepFile, c: Shell, mesh: &mut SharedMesh, stats: &mut Stats) {
     match &s[c] {
         Entity::ClosedShell(_) => closed_shell(s, c.cast(), mesh, stats),
         Entity::OpenShell(_) => open_shell(s, c.cast(), mesh, stats),
@@ -337,7 +343,7 @@ fn shell(s: &StepFile, c: Shell, mesh: &mut Mesh, stats: &mut Stats) {
     }
 }
 
-fn open_shell(s: &StepFile, c: OpenShell, mesh: &mut Mesh, stats: &mut Stats) {
+fn open_shell(s: &StepFile, c: OpenShell, mesh: &mut SharedMesh, stats: &mut Stats) {
     let cs = s.entity(c).expect("Could not get OpenShell");
     for face in &cs.cfs_faces {
         if let Err(err) = advanced_face(s, face.cast(), mesh, stats) {
@@ -347,7 +353,7 @@ fn open_shell(s: &StepFile, c: OpenShell, mesh: &mut Mesh, stats: &mut Stats) {
     stats.num_shells += 1;
 }
 
-fn closed_shell(s: &StepFile, c: ClosedShell, mesh: &mut Mesh, stats: &mut Stats) {
+fn closed_shell(s: &StepFile, c: ClosedShell, mesh: &mut SharedMesh, stats: &mut Stats) {
     let cs = s.entity(c).expect("Could not get ClosedShell");
     for face in &cs.cfs_faces {
         if let Err(err) = advanced_face(s, face.cast(), mesh, stats) {
@@ -357,7 +363,7 @@ fn closed_shell(s: &StepFile, c: ClosedShell, mesh: &mut Mesh, stats: &mut Stats
     stats.num_shells += 1;
 }
 
-fn advanced_face(s: &StepFile, f: AdvancedFace, mesh: &mut Mesh,
+fn advanced_face(s: &StepFile, f: AdvancedFace, mesh: &mut SharedMesh,
                  stats: &mut Stats) -> Result<(), Error>
 {
     let face = s.entity(f).expect("Could not get AdvancedFace");
@@ -367,12 +373,12 @@ fn advanced_face(s: &StepFile, f: AdvancedFace, mesh: &mut Mesh,
     let mut surf = get_surface(s, face.face_geometry)?;
 
     // This is the starting point at which we insert new vertices
-    let offset = mesh.verts.len();
+    let offset = mesh.positions.len();
 
     // For each contour, project from 3D down to the surface, then
     // start collecting them as constrained edges for triangulation
     let mut edges = Vec::new();
-    let v_start = mesh.verts.len();
+    let v_start = mesh.positions.len();
     let mut num_pts = 0;
     for b in &face.bounds {
         let bound_contours = face_bound(s, *b)?;
@@ -386,11 +392,10 @@ fn advanced_face(s: &StepFile, f: AdvancedFace, mesh: &mut Mesh,
             // associated contours.
             1 => {
                 num_pts += 1;
-                mesh.verts.push(mesh::Vertex {
-                    pos: bound_contours[0],
-                    norm: DVec3::zeros(),
-                    color: DVec3::new(0.0, 0.0, 0.0),
-                });
+
+                mesh.positions.push(bound_contours[0]);
+                mesh.normals.as_mut().unwrap().push(DVec3::zeros());
+                mesh.colors.as_mut().unwrap().push(DVec3::zeros());
             },
 
             // Default for lists of contour points
@@ -402,18 +407,17 @@ fn advanced_face(s: &StepFile, f: AdvancedFace, mesh: &mut Mesh,
                     edges.push((num_pts, num_pts + 1));
 
                     // Also store this vertex in the 3D triangulation
-                    mesh.verts.push(mesh::Vertex {
-                        pos: pt,
-                        norm: DVec3::zeros(),
-                        color: DVec3::new(0.0, 0.0, 0.0),
-                    });
+                    mesh.positions.push(pt);
+                    mesh.normals.as_mut().unwrap().push(DVec3::zeros());
+                    mesh.colors.as_mut().unwrap().push(DVec3::zeros());
+
                     num_pts += 1;
                 }
                 // The last point is a duplicate, because it closes the
                 // contours, so we skip it here and reattach the contour to
                 // the start.
                 num_pts -= 1;
-                mesh.verts.pop();
+                mesh.positions.pop();
 
                 // Close the loop by returning to the starting point
                 edges.pop();
@@ -427,9 +431,9 @@ fn advanced_face(s: &StepFile, f: AdvancedFace, mesh: &mut Mesh,
     // _fail_ due to these points, so if that happens, we nuke the point (by
     // assigning it to the first point in the list, which causes it to get
     // deduplicated), then retry.
-    let mut pts = surf.lower_verts(&mut mesh.verts[v_start..])?;
+    let mut pts = surf.lower_verts(&mut mesh.positions[v_start..], &mut mesh.normals.as_mut().unwrap()[v_start..])?;
     let bonus_points = pts.len();
-    surf.add_steiner_points(&mut pts, &mut mesh.verts);
+    surf.add_steiner_points(&mut pts, &mut mesh.positions, &mut mesh.normals.as_mut().unwrap(), &mut mesh.colors.as_mut().unwrap());
     let result = std::panic::catch_unwind(|| {
         // TODO: this is only needed because we use pts below to save a debug
         // SVG if this panics.  Once we're confident in never panicking, we
@@ -466,13 +470,13 @@ fn advanced_face(s: &StepFile, f: AdvancedFace, mesh: &mut Mesh,
                 let a = (a + offset) as u32;
                 let b = (b + offset) as u32;
                 let c = (c + offset) as u32;
-                mesh.triangles.push(Triangle { verts:
+                mesh.triangles.push(
                     if face.same_sense {
                         U32Vec3::new(a, b, c)
                     } else {
                         U32Vec3::new(a, c, b)
                     }
-                });
+                );
             }
         },
         Ok(Err(e)) => {
@@ -493,8 +497,9 @@ fn advanced_face(s: &StepFile, f: AdvancedFace, mesh: &mut Mesh,
     }
     // Flip normals of new vertices, depending on the same_sense flag
     if !face.same_sense {
-        for v in &mut mesh.verts[v_start..] {
-            v.norm = -v.norm;
+        let mut normals = mesh.normals.as_mut().unwrap();
+        for i in v_start..normals[v_start..].len() {
+            normals[i] = -normals[i];
         }
     }
     Ok(())
