@@ -41,9 +41,14 @@ init();
 // Selecting all required elements
 const dropArea = document.getElementById("drag-area");
 const selectedLabel = document.getElementById("selected-files-label");
+const importButton = document.getElementById("import-button");
 const dragText = dropArea.querySelector("header");
 const button = dropArea.querySelector("button");
 const input = dropArea.querySelector("input");
+
+importButton.onclick = () => {
+  importFiles(input.files);
+};
 
 button.onclick = () => {
   input.click(); // If user click on the button then the input also clicked
@@ -75,8 +80,10 @@ dropArea.ondrop = function (event) {
   showFile(event.dataTransfer.files); //calling function
 };
 
-function showFile(files) {
-  selectedLabel.innerHTML = `${files.length} files selected`;
+function checkFiles(files) {
+  if (files.length == 0) {
+    return false;
+  }
 
   let validExtensions = ["obj", "step", "stp"]; // Adding some valid image extensions in array
 
@@ -85,13 +92,25 @@ function showFile(files) {
     let format = files[i].name.split(".").pop().toLowerCase();
     if (!validExtensions.includes(format)) {
       alert(`"${format}" is not a supported file format!`);
-      dropArea.classList.remove("active");
-      dragText.textContent = "Drag & Drop to Upload File";
-      return;
+      return false;
     }
   }
 
+  return true;
+}
+
+function showFile(files) {
+  if (checkFiles(files)) {
+    importButton.disabled = false;
+    selectedLabel.innerHTML = `${files.length} files selected`;
+  } else {
+    importButton.disabled = true;
+    selectedLabel.innerHTML = "";
+  }
+}
+
+function importFiles(files) {
   for (var i = 0; i < files.length; i++) {
-    //handleFile(files[i]);
+    handleFile(files[i]);
   }
 }
