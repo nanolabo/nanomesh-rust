@@ -40,6 +40,7 @@ init();
 
 // Selecting all required elements
 const dropArea = document.getElementById("drag-area");
+const selectedLabel = document.getElementById("selected-files-label");
 const dragText = dropArea.querySelector("header");
 const button = dropArea.querySelector("button");
 const input = dropArea.querySelector("input");
@@ -50,7 +51,6 @@ button.onclick = () => {
 
 input.onchange = function () {
   // Getting user select file and [0] this means if user select multiple files then we'll select only the first one
-  dropArea.classList.add("active");
   showFile(this.files);
 };
 
@@ -69,12 +69,15 @@ dropArea.ondragleave = function () {
 
 //If user drop File on DropArea
 dropArea.ondrop = function (event) {
+  dropArea.classList.remove("active");
   event.preventDefault(); //preventing from default behaviour
   //getting user select file and [0] this means if user select multiple files then we'll select only the first one
   showFile(event.dataTransfer.files); //calling function
 };
 
 function showFile(files) {
+  selectedLabel.innerHTML = `${files.length} files selected`;
+
   let validExtensions = ["obj", "step", "stp"]; // Adding some valid image extensions in array
 
   for (var i = 0; i < files.length; i++) {
@@ -89,6 +92,6 @@ function showFile(files) {
   }
 
   for (var i = 0; i < files.length; i++) {
-    handleFile(files[i]);
+    //handleFile(files[i]);
   }
 }

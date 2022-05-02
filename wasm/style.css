@@ -28,28 +28,27 @@ body {
   width: 5px;
   /* background-color: red; */
 }
-.content {
+.flex {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
+}
+.content {
   width: 700px;
   /* background-color: #5256ad; */
 }
 .drag-area {
-  background-color: #ffffff20;
+  background-color: #ffffff05;
   flex-basis: 100%;
-  display: flex;
-  flex-wrap: wrap;
-  border: 0px dashed #fff;
+  border: 1px solid #555;
   height: 400px;
   border-radius: 10px;
-  align-items: center;
-  justify-content: center;
   flex-direction: column;
+  backdrop-filter: blur(10px);
 }
 .drag-area.active {
-  border: 2px solid #fff;
+  background-color: #ffffff20;
 }
 .drag-area .icon {
   font-size: 100px;
@@ -62,13 +61,13 @@ body {
   margin: 10px 0 15px 0;
 }
 .drag-area button {
-  padding: 10px 25px;
+  padding: 0px 15px;
   border: none;
   outline: none;
-  background: #fff;
-  color: #5256ad;
-  border-radius: 5px;
+  background-color: #2196f3;
+  border-radius: 10px;
   cursor: pointer;
+  height: 45px;
 }
 .drag-area img {
   height: 100%;
@@ -137,4 +136,9 @@ body {
 .dropdown-button:hover,
 .dropdown:hover .dropdown-button {
   background-color: #0b7dda;
+}
+
+.dropdown-button:disabled {
+  background-color: #0b7dda82;
+  cursor: unset;
 }
