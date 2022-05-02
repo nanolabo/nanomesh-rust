@@ -2,21 +2,48 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: "Poppins", sans-serif;
+  font-family: "Open Sans";
+  color: #eeeeee;
+}
+p {
+  font-size: 0.875em; /* 14px/16=0.875em */
 }
 body {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  background: #5256ad;
+  overflow: hidden;
+  height: 100vh;
+  background-color: #121212;
+}
+.break {
+  flex-basis: 100%;
+  min-height: 10px;
+  /* background-color: blue; */
+}
+.filler {
+  flex-grow: 1;
+  min-height: 5px;
+  width: 5px;
+  /* background-color: red; */
+}
+.content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  width: 700px;
+  /* background-color: #5256ad; */
 }
 .drag-area {
-  border: 4px dashed #fff;
-  height: 500px;
-  width: 700px;
-  border-radius: 5px;
+  background-color: #ffffff20;
+  flex-basis: 100%;
   display: flex;
+  flex-wrap: wrap;
+  border: 0px dashed #fff;
+  height: 400px;
+  border-radius: 10px;
   align-items: center;
   justify-content: center;
   flex-direction: column;
@@ -26,23 +53,16 @@ body {
 }
 .drag-area .icon {
   font-size: 100px;
-  color: #fff;
 }
 .drag-area header {
   font-size: 30px;
-  font-weight: 500;
-  color: #fff;
 }
 .drag-area span {
   font-size: 25px;
-  font-weight: 500;
-  color: #fff;
   margin: 10px 0 15px 0;
 }
 .drag-area button {
   padding: 10px 25px;
-  font-size: 20px;
-  font-weight: 500;
   border: none;
   outline: none;
   background: #fff;
@@ -55,4 +75,66 @@ body {
   width: 100%;
   object-fit: cover;
   border-radius: 5px;
+}
+
+/* Dropdown Button */
+.dropdown-button {
+  background-color: #2196f3;
+  color: white;
+  padding: 0px 15px;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  height: 45px;
+}
+
+.round-left {
+  border-radius: 10px 0px 0px 10px;
+}
+
+.round-right {
+  border-radius: 0px 10px 10px 0px;
+}
+
+.round-all {
+  margin-left: 15px;
+  border-radius: 10px;
+}
+
+/* The container <div> - needed to position the dropdown content */
+.float {
+  float: left;
+}
+
+/* Dropdown Content (Hidden by Default) */
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f1f1f1;
+  min-width: 160px;
+  z-index: 1;
+}
+
+/* Links inside the dropdown */
+.dropdown-content a {
+  color: black;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+}
+
+/* Change color of dropdown links on hover */
+.dropdown-content a:hover {
+  background-color: #ddd;
+}
+
+/* Show the dropdown menu on hover */
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
+/* Change the background color of the dropdown button when the dropdown content is shown */
+.dropdown-button:hover,
+.dropdown:hover .dropdown-button {
+  background-color: #0b7dda;
 }
