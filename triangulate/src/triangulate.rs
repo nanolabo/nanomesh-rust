@@ -203,12 +203,12 @@ pub fn triangulate(s: &StepFile) -> (SharedMesh, Stats) {
                         let p_h = DVec4::new(p.x, p.y, p.z, 1.0);
                         let pos = (mat * p_h).xyz();
 
-                        let n = mesh.normals.as_mut().unwrap()[v];
+                        let n = mesh.normals.as_mut().expect("no normals")[v];
                         let norm = (mat * glm::vec3_to_vec4(&n)).xyz();
 
                         mesh.positions.push(pos);
-                        mesh.normals.as_mut().unwrap().push(norm);
-                        mesh.colors.as_mut().unwrap().push(color);
+                        mesh.normals.as_mut().expect("no normals").push(norm);
+                        mesh.colors.as_mut().expect("no colors").push(color);
                     }
                     let offset = mesh.positions.len() - v_end;
                     for t in t_start..t_end {
@@ -223,7 +223,7 @@ pub fn triangulate(s: &StepFile) -> (SharedMesh, Stats) {
                 // Now that we've built all of the other copies of the mesh,
                 // re-use the original mesh and apply the first transform
                 let mat = mats[0];
-                let mut normals = mesh.normals.as_mut().unwrap();
+                let mut normals = mesh.normals.as_mut().expect("no normals");
                 for v in v_start..v_end {
                     let p = mesh.positions[v];
                     let p_h = DVec4::new(p.x, p.y, p.z, 1.0);
@@ -394,8 +394,8 @@ fn advanced_face(s: &StepFile, f: AdvancedFace, mesh: &mut SharedMesh,
                 num_pts += 1;
 
                 mesh.positions.push(bound_contours[0]);
-                mesh.normals.as_mut().unwrap().push(DVec3::zeros());
-                mesh.colors.as_mut().unwrap().push(DVec3::zeros());
+                mesh.normals.as_mut().expect("no normals").push(DVec3::zeros());
+                mesh.colors.as_mut().expect("no colors").push(DVec3::zeros());
             },
 
             // Default for lists of contour points
@@ -408,8 +408,8 @@ fn advanced_face(s: &StepFile, f: AdvancedFace, mesh: &mut SharedMesh,
 
                     // Also store this vertex in the 3D triangulation
                     mesh.positions.push(pt);
-                    mesh.normals.as_mut().unwrap().push(DVec3::zeros());
-                    mesh.colors.as_mut().unwrap().push(DVec3::zeros());
+                    mesh.normals.as_mut().expect("no normals").push(DVec3::zeros());
+                    mesh.colors.as_mut().expect("no colors").push(DVec3::zeros());
 
                     num_pts += 1;
                 }
@@ -431,9 +431,9 @@ fn advanced_face(s: &StepFile, f: AdvancedFace, mesh: &mut SharedMesh,
     // _fail_ due to these points, so if that happens, we nuke the point (by
     // assigning it to the first point in the list, which causes it to get
     // deduplicated), then retry.
-    let mut pts = surf.lower_verts(&mut mesh.positions[v_start..], &mut mesh.normals.as_mut().unwrap()[v_start..])?;
+    let mut pts = surf.lower_verts(&mut mesh.positions[v_start..], &mut mesh.normals.as_mut().expect("no normals")[v_start..])?;
     let bonus_points = pts.len();
-    surf.add_steiner_points(&mut pts, &mut mesh.positions, &mut mesh.normals.as_mut().unwrap(), &mut mesh.colors.as_mut().unwrap());
+    surf.add_steiner_points(&mut pts, &mut mesh.positions, &mut mesh.normals.as_mut().expect("no normals"), &mut mesh.colors.as_mut().expect("no colors"));
     let result = std::panic::catch_unwind(|| {
         // TODO: this is only needed because we use pts below to save a debug
         // SVG if this panics.  Once we're confident in never panicking, we
@@ -497,7 +497,7 @@ fn advanced_face(s: &StepFile, f: AdvancedFace, mesh: &mut SharedMesh,
     }
     // Flip normals of new vertices, depending on the same_sense flag
     if !face.same_sense {
-        let mut normals = mesh.normals.as_mut().unwrap();
+        let mut normals = mesh.normals.as_mut().expect("no normals");
         for i in v_start..normals[v_start..].len() {
             normals[i] = -normals[i];
         }

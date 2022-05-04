@@ -2,6 +2,7 @@
 // wasm-pack build
 // wasm-pack build --release --target web
 
+extern crate console_error_panic_hook;
 use wasm_bindgen::prelude::*;
 use std::io::BufWriter;
 use std::io::BufReader;
@@ -31,6 +32,8 @@ extern {
 #[wasm_bindgen]
 pub fn read_obj(parameters: &Parameters, bytes: &[u8]) -> Vec<u8> {
 
+  console_error_panic_hook::set_once();
+
   set_progress(0., "Reading...");
 
   //let slice: &[u8] = &bytes[..];
@@ -41,7 +44,7 @@ pub fn read_obj(parameters: &Parameters, bytes: &[u8]) -> Vec<u8> {
 
   let flat = StepFile::strip_flatten(bytes);
 
-  set_progress(0.5, "Parsing...");
+  set_progress(0.25, "Parsing...");
 
   let step = StepFile::parse(&flat);
 
@@ -51,7 +54,7 @@ pub fn read_obj(parameters: &Parameters, bytes: &[u8]) -> Vec<u8> {
 
   let mut result = Vec::new();
 
-  set_progress(0.5, "Writing...");
+  set_progress(0.75, "Writing...");
   
   {
     let mut writer = BufWriter::new(&mut result);
