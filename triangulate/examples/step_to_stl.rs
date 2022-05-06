@@ -38,9 +38,5 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .expect("Time went backwards");
     println!("Triangulated in {:?}", since_the_epoch);
 
-    if let Some(o) = matches.value_of("output") {
-        tri.0.save_stl(o)?;
-    }
-
     Ok(())
 }

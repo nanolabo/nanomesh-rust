@@ -16,6 +16,7 @@ impl<'a> StepFile<'a> {
     /// Parses a STEP file from a raw array of bytes
     /// `data` must be preprocessed by [`strip_flatten`] first
     pub fn parse(data: &'a [u8]) -> Self {
+
         let blocks = Self::into_blocks(&data);
         let data_start = blocks.iter()
             .position(|b| b == b"DATA;")

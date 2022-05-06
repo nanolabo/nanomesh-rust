@@ -6,6 +6,8 @@ extern crate console_error_panic_hook;
 use wasm_bindgen::prelude::*;
 use std::io::BufWriter;
 use std::io::BufReader;
+use log::{Level};
+use log::{info, warn, error};
 
 #[wasm_bindgen]
 pub struct Parameters {
@@ -30,9 +32,13 @@ extern {
 }
 
 #[wasm_bindgen]
-pub fn read_obj(parameters: &Parameters, bytes: &[u8]) -> Vec<u8> {
-
+pub fn initialize() {
   console_error_panic_hook::set_once();
+  console_log::init_with_level(Level::Info).expect("Failed to initialize log");
+}
+
+#[wasm_bindgen]
+pub fn read_obj(parameters: &Parameters, bytes: &[u8]) -> Vec<u8> {
 
   set_progress(0., "Reading...");
 

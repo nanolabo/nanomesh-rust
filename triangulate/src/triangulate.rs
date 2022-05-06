@@ -119,6 +119,7 @@ pub fn triangulate(s: &StepFile) -> (SharedMesh, Stats) {
                 todo.push((*child, mat * next_mat));
             }
         } else {
+
             // Bind this transform to the RepresentationItem, which is
             // either a ManifoldSolidBrep or a ShellBasedSurfaceModel
             let items = match &s[id] {

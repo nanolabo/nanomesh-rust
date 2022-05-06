@@ -1,4 +1,4 @@
-import init, { Parameters, read_obj } from "./pkg/nanolabo_wasm.js";
+import init, { initialize, Parameters, read_obj } from "./pkg/nanolabo_wasm.js";
 
 function readFile(file) {
   return new Promise((resolve, reject) => {
@@ -10,7 +10,8 @@ function readFile(file) {
     reader.addEventListener("error", reject);
 
     // Read file
-    reader.readAsArrayBuffer(file);
+    //reader.readAsArrayBuffer(file); // raw bytes, does not work well with non utf-8 encoded files
+    reader.readAsText(file);
   });
 }
 
@@ -22,7 +23,8 @@ async function handleFile(file) {
 
   // Todo: Stop copying in a JS buffer, instead copy direct to a wasm buffer
   // https://wasmbyexample.dev/examples/webassembly-linear-memory/webassembly-linear-memory.rust.en-us.html#
-  var array = new Uint8Array(await readFile(file));
+  let array = new TextEncoder("utf-8").encode(await readFile(file));
+  //var array = new Uint8Array(await readFile(file)); // raw bytes, does not work well with non utf-8 encoded files
   console.log(array);
   var result = read_obj(parameters, array);
   console.log("Output size: " + result.length);
@@ -37,6 +39,7 @@ async function handleFile(file) {
 
 // Initialize wasm module
 init();
+initialize();
 
 // Selecting all required elements
 const dropArea = document.getElementById("drag-area");
