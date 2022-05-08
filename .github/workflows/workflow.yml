@@ -11,12 +11,21 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Build
+
+      - name: Build 🛠
         run: cargo build --verbose
-      - name: Test
+
+      - name: Test 🧪
         run: cargo test --verbose
-      - name: Pack
+
+      - name: Pack 📦
         run: |
           cargo install wasm-pack
           cd wasm
           wasm-pack build --release --target web
+
+      - name: Deploy 🚀
+        uses: JamesIves/github-pages-deploy-action@v4.3.3
+        with:
+          branch: gh-pages
+          folder: wasm
