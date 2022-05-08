@@ -1,15 +1,16 @@
-use super::vector3::Vector3;
+use nalgebra_glm as glm;
+use glm::{DVec3};
 use std::fmt::*;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Box3 {
-    pub min: Vector3,
-    pub max: Vector3,
+    pub min: DVec3,
+    pub max: DVec3,
 }
 
 impl Box3
 {
-    pub fn new(min: Vector3, max: Vector3) -> Self {
+    pub fn new(min: DVec3, max: DVec3) -> Self {
         return Box3 { 
             min: min,
             max: max
@@ -22,15 +23,15 @@ impl Box3
 
     pub fn zero() -> Self {
         Box3 {
-            min: Vector3::default(),
-            max: Vector3::default()
+            min: DVec3::default(),
+            max: DVec3::default()
         }
     }
 
     pub fn unfitted() -> Self {
         Box3 {
-            min: Vector3 { x: f64::MAX, y: f64::MAX, z: f64::MAX },
-            max: Vector3 { x: f64::MIN, y: f64::MIN, z: f64::MIN }
+            min: DVec3::new(f64::MAX, f64::MAX, f64::MAX),
+            max: DVec3::new(f64::MIN, f64::MIN, f64::MIN)
         }
     }
 }
@@ -38,8 +39,8 @@ impl Box3
 impl Default for Box3 {
     fn default() -> Self {
         Box3 {
-            min: Vector3::default(),
-            max: Vector3::default()
+            min: DVec3::default(),
+            max: DVec3::default()
         }
     }
 }

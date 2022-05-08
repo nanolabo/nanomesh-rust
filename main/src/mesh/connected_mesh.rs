@@ -7,8 +7,8 @@ pub struct ConnectedMesh {
     nodes: Vec<Node>,
     face_count: u32,
 
-    positions: Vec<Vector3>,
-    normals: Option<Vec<Vector3>>,
+    positions: Vec<DVec3>,
+    normals: Option<Vec<DVec3>>,
     // uv0: Vec<Vector3>,
     // colors: Vec<Vector3>,
 }
@@ -280,14 +280,14 @@ impl ConnectedMesh {
         return edge_weight;
     }
 
-    fn get_face_normal(&mut self, node_index: u32) -> Vector3 {
+    fn get_face_normal(&mut self, node_index: u32) -> DVec3 {
         let node_a = self.nodes[node_index as usize];
         let node_b = self.nodes[node_a.relative as usize];
         let node_c = self.nodes[node_b.relative as usize];
         let pos_a = &self.positions[node_a.position as usize];
         let pos_b = &self.positions[node_b.position as usize];
         let pos_c = &self.positions[node_c.position as usize];
-        (&(pos_b - pos_a) ^ &(pos_c - pos_a)).normalized()
+        (&(pos_b - pos_a).cross(&(pos_c - pos_a))).normalize()
     }
 }
 
@@ -340,12 +340,12 @@ mod connected_mesh_tests {
         // D────────────────────────C
 
         let mut positions = Vec::new();
-        positions.push(Vector3::new2d(0., 1.)); // A (0)
-        positions.push(Vector3::new2d(2., 1.)); // B (1)
-        positions.push(Vector3::new2d(2., 0.)); // C (2)
-        positions.push(Vector3::new2d(0., 0.)); // D (3)
-        positions.push(Vector3::new2d(0.25, 0.5)); // E (4)
-        positions.push(Vector3::new2d(1.75, 0.5)); // F (5)
+        positions.push(DVec3::new2d(0., 1.)); // A (0)
+        positions.push(DVec3::new2d(2., 1.)); // B (1)
+        positions.push(DVec3::new2d(2., 0.)); // C (2)
+        positions.push(DVec3::new2d(0., 0.)); // D (3)
+        positions.push(DVec3::new2d(0.25, 0.5)); // E (4)
+        positions.push(DVec3::new2d(1.75, 0.5)); // F (5)
 
         let mut nodes = Vec::new();
         // Face AED

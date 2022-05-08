@@ -141,7 +141,7 @@ impl ConnectedMesh {
             loop_siblings!(node_index, connected_mesh.nodes, sibling, {
                 let face_normal = &connected_mesh.get_face_normal(sibling);
                 let position = &connected_mesh.positions[connected_mesh.nodes[sibling as usize].position as usize];
-                let dot = &-face_normal * position;
+                let dot = &-face_normal.dot(position);
                 matrix += SymmetricMatrix::from_normal(face_normal, &dot);
             });
             quadrics[connected_mesh.nodes[node_index as usize].position as usize] = matrix;
@@ -173,13 +173,13 @@ impl ConnectedMesh {
 
             let (error_o, pos_o) = &
             if det > 0.001 || det < -0.001 {
-                let pos = Vector3::new(
+                let pos = DVec3::new(
                     -1.0 / det * matrix.get_det_x(),
                      1.0 / det * matrix.get_det_y(),
                     -1.0 / det * matrix.get_det_z());
                 (matrix.quadric_distance_to_vertex(&pos), pos)
             } else {
-                (f64::MAX, Vector3::default())
+                (f64::MAX, DVec3::default())
             };
 
             let mut error_a = matrix.quadric_distance_to_vertex(&pos_a);

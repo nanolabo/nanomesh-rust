@@ -1,4 +1,6 @@
-use super::vector3::Vector3;
+use nalgebra_glm as glm;
+use glm::{DVec3};
+
 use std::ops::*;
 use std::fmt::*;
 
@@ -20,7 +22,7 @@ impl SymmetricMatrix {
         }
     }
 
-    pub fn from_normal(normal: &Vector3, dot: &f64) -> SymmetricMatrix {
+    pub fn from_normal(normal: &DVec3, dot: &f64) -> SymmetricMatrix {
         SymmetricMatrix {
             m: [normal.x * normal.x, normal.x * normal.y, normal.x * normal.z, normal.x * dot,
                 normal.y * normal.y, normal.y * normal.z, normal.y * dot,
@@ -65,7 +67,7 @@ impl SymmetricMatrix {
         self.m[1] * self.m[1] * self.m[7]
     }
 
-    pub fn quadric_distance_to_vertex(self, position: &Vector3) -> f64 {
+    pub fn quadric_distance_to_vertex(self, position: &DVec3) -> f64 {
         self.m[0] * position.x * position.x + 2.0 * self.m[1] * position.x * position.y + 2.0 * self.m[2] * position.x * position.z + 2.0 * self.m[3] * position.x +
         self.m[4] * position.y * position.y + 2.0 * self.m[5] * position.y * position.z + 2.0 * self.m[6] * position.y +
         self.m[7] * position.z * position.z + 2.0 * self.m[8] * position.z +

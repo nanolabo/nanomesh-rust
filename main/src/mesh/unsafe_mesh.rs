@@ -1,14 +1,15 @@
 use super::shared_mesh::SharedMesh;
 use super::Group;
-use crate::base::Vector3;
+use nalgebra_glm as glm;
+use glm::{DVec3};
 use crate::utils::r#unsafe::*;
 
 pub struct UnsafeMesh
 { 
-    positions_ptr: *mut Vector3,
+    positions_ptr: *mut DVec3,
     positions_len: i32,
 
-    normals_ptr: *mut Vector3,
+    normals_ptr: *mut DVec3,
     normals_len: i32,
 
     triangles_ptr: *mut u32,

@@ -1,17 +1,17 @@
 impl From<&SharedMesh> for ConnectedMesh {
     fn from(shared_mesh: &SharedMesh) -> Self {
         let triangles = &shared_mesh.triangles;
-        let mut nodes = vec![Node::default(); triangles.len()];
+        let mut nodes = vec![Node::default(); triangles.len() * 3];
         let mut vertex_to_nodes = HashMap::<u32, Vec<u32>, _>::with_hasher(
             BuildHasherDefault::<SimpleHasher>::default()
         );
         let mut face_count = 0;
-        let mut i: usize = 0;
-        loop {
+        for i in 0..triangles.len() {
+            let triangle = triangles[i];
             {
                 let mut a = &mut nodes[i];
-                a.position = triangles[i];
-                a.normal = triangles[i];
+                a.position = triangle[0];
+                a.normal = triangle[0];
                 a.relative = (i as u32) + 1; // B
                 if !vertex_to_nodes.contains_key(&a.position) {
                     vertex_to_nodes.insert(a.position, Vec::new());
@@ -20,8 +20,8 @@ impl From<&SharedMesh> for ConnectedMesh {
             }
             {
                 let mut b = &mut nodes[i + 1];
-                b.position = triangles[i + 1];
-                b.normal = triangles[i + 1];
+                b.position = triangle[1];
+                b.normal = triangle[1];
                 b.relative = (i as u32) + 2; // C
                 if !vertex_to_nodes.contains_key(&b.position) {
                     vertex_to_nodes.insert(b.position, Vec::new());
@@ -30,8 +30,8 @@ impl From<&SharedMesh> for ConnectedMesh {
             }
             {
                 let mut c = &mut nodes[i + 2];
-                c.position = triangles[i + 2];
-                c.normal = triangles[i + 2];
+                c.position = triangle[2];
+                c.normal = triangle[2];
                 c.relative = i as u32; // A
                 if !vertex_to_nodes.contains_key(&c.position) {
                     vertex_to_nodes.insert(c.position, Vec::new());
@@ -39,11 +39,6 @@ impl From<&SharedMesh> for ConnectedMesh {
                 vertex_to_nodes.get_mut(&c.position).unwrap().push((i as u32) + 2);
             }
             face_count = face_count + 1;
-
-            i = i + 3;
-            if i >= triangles.len() {
-                break;
-            }
         }
 
         for x in vertex_to_nodes.values() {
@@ -80,7 +75,7 @@ impl From<&ConnectedMesh> for SharedMesh {
 
         let mut per_vertex_map = HashMap::<[u32; 2], u32>::new();
         let mut browsed_nodes = HashSet::new();
-        let mut triangles = Vec::<u32>::with_capacity((connected_mesh.face_count * 3) as usize);
+        let mut triangles = Vec::<U32Vec3>::with_capacity((connected_mesh.face_count / 3) as usize);
 
         for i in 0..connected_mesh.nodes.len() {
             if connected_mesh.nodes[i].is_removed {
@@ -90,24 +85,29 @@ impl From<&ConnectedMesh> for SharedMesh {
             if browsed_nodes.contains(&(i as u32)) {
                 continue; // TODO: Useful ?
             }
+
+            let mut triangle = U32Vec3::default();
+
             loop_relatives!(i as u32, connected_mesh.nodes, relative, {
                 let key = [connected_mesh.nodes[relative as usize].position, connected_mesh.nodes[relative as usize].normal];
                 if !per_vertex_map.contains_key(&key) {
                     per_vertex_map.insert(key, per_vertex_map.len() as u32);
                 }
-                triangles.push(*per_vertex_map.get(&key).unwrap());
+                triangle[i] = *per_vertex_map.get(&key).unwrap();
                 browsed_nodes.insert(relative);
             });
+
+            triangles.push(triangle);
         }
 
-        let mut positions = vec![Vector3::default(); per_vertex_map.len()];
+        let mut positions = vec![DVec3::default(); per_vertex_map.len()];
         for (key, value) in &per_vertex_map {
             positions[*value as usize] = connected_mesh.positions[key[0] as usize];
         }
 
         let normals = match &connected_mesh.normals {
             Some(cm_normals) => {
-                let mut snormals = vec![Vector3::default(); per_vertex_map.len()];
+                let mut snormals = vec![DVec3::default(); per_vertex_map.len()];
                 for (key, value) in &per_vertex_map {
                     snormals[*value as usize] = cm_normals[key[1] as usize];
                 }
@@ -117,10 +117,12 @@ impl From<&ConnectedMesh> for SharedMesh {
         };
 
         return SharedMesh {
+            groups: Vec::new(),
+            triangles: triangles,
             positions: positions,
             normals: normals,
-            triangles: triangles,
-            groups: Vec::new() };
+            colors: None,
+        };
     }
 }
 
@@ -141,20 +143,16 @@ mod builder_tests {
         
         let mut positions = Vec::new();
         // Build a square
-        positions.push(Vector3::new(0., 0., 0.));
-        positions.push(Vector3::new(1., 0., 0.));
-        positions.push(Vector3::new(1., 1., 0.));
-        positions.push(Vector3::new(0., 1., 0.));
+        positions.push(DVec3::new(0., 0., 0.));
+        positions.push(DVec3::new(1., 0., 0.));
+        positions.push(DVec3::new(1., 1., 0.));
+        positions.push(DVec3::new(0., 1., 0.));
 
         let mut triangles = Vec::new();
         // First triangle
-        triangles.push(0);
-        triangles.push(1);
-        triangles.push(2);
+        triangles.push([0, 1, 2]);
         // Second triangle
-        triangles.push(0);
-        triangles.push(2);
-        triangles.push(3);
+        triangles.push([0, 2, 3]);
 
         let shared_mesh = SharedMesh { 
             groups: Vec::new(),
@@ -191,10 +189,10 @@ mod builder_tests {
 
         let mut positions = Vec::new();
         // Build a square
-        positions.push(Vector3::new(0., 0., 0.));
-        positions.push(Vector3::new(1., 0., 0.));
-        positions.push(Vector3::new(1., 1., 0.));
-        positions.push(Vector3::new(0., 1., 0.));
+        positions.push(DVec3::new(0., 0., 0.));
+        positions.push(DVec3::new(1., 0., 0.));
+        positions.push(DVec3::new(1., 1., 0.));
+        positions.push(DVec3::new(0., 1., 0.));
 
         let mut nodes = Vec::new();
         nodes.push(Node::from_layout(0, 3, 1));

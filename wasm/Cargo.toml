@@ -10,5 +10,10 @@ path = "src/lib.rs"
 crate-type = ["cdylib"]
 
 [dependencies]
+step = { path = "../step", default-features = false }
+triangulate = { path = "../triangulate", default-features = false, features = [] }
 nanomesh = { path = "../main" }
 wasm-bindgen = "0.2.80"
+console_log = "0.2"
+log = "0.4.14"
+console_error_panic_hook = "0.1.7"

@@ -1,6 +1,6 @@
 #[derive(Debug, Copy, Clone)]
 struct CollapseContext {
-    collapse_to: Vector3,
+    collapse_to: DVec3,
     error: f64, // TODO: f32 ?
     weight: f64, // TODO: f32 ?
 }
@@ -8,7 +8,7 @@ struct CollapseContext {
 impl Default for CollapseContext {
     fn default() -> Self {
         Self {
-            collapse_to: Vector3::default(),
+            collapse_to: DVec3::default(),
             error: 0.,
             weight: 0.,
         }
