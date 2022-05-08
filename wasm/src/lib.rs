@@ -5,9 +5,7 @@
 extern crate console_error_panic_hook;
 use wasm_bindgen::prelude::*;
 use std::io::BufWriter;
-use std::io::BufReader;
 use log::{Level};
-use log::{info, warn, error};
 
 #[wasm_bindgen]
 pub struct Parameters {
@@ -32,7 +30,7 @@ extern {
 }
 
 #[wasm_bindgen]
-pub fn initialize() {
+pub fn setup_logging() {
   console_error_panic_hook::set_once();
   console_log::init_with_level(Level::Info).expect("Failed to initialize log");
 }
@@ -48,20 +46,15 @@ pub fn read_obj(parameters: &Parameters, bytes: &[u8]) -> Vec<u8> {
   use step::step_file::StepFile;
   use triangulate::triangulate::triangulate; // lol
 
-  let flat = StepFile::strip_flatten(bytes);
-
   set_progress(0.25, "Parsing...");
-
+  let flat = StepFile::strip_flatten(bytes);
   let step = StepFile::parse(&flat);
 
   set_progress(0.5, "Tesselating...");
-
-  let (mut mesh, _stats) = triangulate(&step);
-
-  let mut result = Vec::new();
+  let (mesh, _stats) = triangulate(&step);
 
   set_progress(0.75, "Writing...");
-  
+  let mut result = Vec::new();
   {
     let mut writer = BufWriter::new(&mut result);
     nanomesh::io::obj::write(&mesh, &mut writer);

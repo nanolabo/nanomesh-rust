@@ -2,7 +2,6 @@ use std::f64::{EPSILON, consts::PI};
 
 use nalgebra_glm as glm;
 use glm::{DVec2, DVec3, DVec4, DMat4};
-use nanomesh::mesh::SharedMesh;
 
 use nurbs::{AbstractSurface, NDBSplineSurface, SampledSurface};
 use crate::{Error};
@@ -339,8 +338,11 @@ impl Surface {
         let num_pts = match self {
             Surface::Sphere { .. }   => 6,
             Surface::Torus { .. } => 32,
+            //Surface::BSpline { .. } => 32,
             _ => 0,
         };
+
+        //log::warn!("steiner on: {:?}", self);
 
         for x in 0..num_pts {
             let x_frac = (x as f64 + 1.0) / (num_pts as f64 + 1.0);

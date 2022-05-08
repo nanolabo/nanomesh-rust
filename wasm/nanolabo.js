@@ -1,4 +1,4 @@
-import init, { initialize, Parameters, read_obj } from "./pkg/nanolabo_wasm.js";
+import init, { setup_logging, Parameters, read_obj } from "./pkg/nanolabo_wasm.js";
 
 function readFile(file) {
   return new Promise((resolve, reject) => {
@@ -38,8 +38,8 @@ async function handleFile(file) {
 }
 
 // Initialize wasm module
-init();
-initialize();
+await init();
+setup_logging();
 
 // Selecting all required elements
 const dropArea = document.getElementById("drag-area");

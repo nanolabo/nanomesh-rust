@@ -224,7 +224,7 @@ pub fn triangulate(s: &StepFile) -> (SharedMesh, Stats) {
                 // Now that we've built all of the other copies of the mesh,
                 // re-use the original mesh and apply the first transform
                 let mat = mats[0];
-                let mut normals = mesh.normals.as_mut().expect("no normals");
+                let normals = mesh.normals.as_mut().expect("no normals");
                 for v in v_start..v_end {
                     let p = mesh.positions[v];
                     let p_h = DVec4::new(p.x, p.y, p.z, 1.0);
@@ -498,7 +498,7 @@ fn advanced_face(s: &StepFile, f: AdvancedFace, mesh: &mut SharedMesh,
     }
     // Flip normals of new vertices, depending on the same_sense flag
     if !face.same_sense {
-        let mut normals = mesh.normals.as_mut().expect("no normals");
+        let normals = mesh.normals.as_mut().expect("no normals");
         for i in v_start..normals[v_start..].len() {
             normals[i] = -normals[i];
         }
