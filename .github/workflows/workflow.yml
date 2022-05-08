@@ -18,4 +18,5 @@ jobs:
       - name: Pack
         run: |
           cargo install wasm-pack
+          cd wasm
           wasm-pack build --release --target web
