@@ -27,6 +27,11 @@ jobs:
           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
           cd wasm
           wasm-pack build --release --target web
+          cd ..
+          tree .
+
+      - name: Debug
+        run: tree .
 
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4.3.3
