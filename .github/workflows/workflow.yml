@@ -14,7 +14,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout 🛎️
+        uses: actions/checkout@v2
 
       - name: Build 🛠
         run: cargo build --verbose
@@ -27,8 +28,6 @@ jobs:
           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
           cd wasm
           wasm-pack build --release --target web
-          cd ..
-          tree .
 
       - name: Debug
         run: tree .
@@ -38,3 +37,6 @@ jobs:
         with:
           branch: gh-pages
           folder: wasm
+
+      - name: Post deploy debug
+        run: tree .
