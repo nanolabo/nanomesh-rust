@@ -264,12 +264,12 @@ mod tests {
     fn add_similar_entities() {
         let mut scene = Scene::new();
 
-        for i in 0..1000000 {
+        for i in 0..10000 {
             scene.add_entity(MyEntityA { attachement_id: None, my_value: 1 });
         }
 
         let entities = scene.get_entities::<MyEntityA>().unwrap();
-        assert_eq!(1000000, entities.len());
+        assert_eq!(10000, entities.len());
     }
 
     #[test]

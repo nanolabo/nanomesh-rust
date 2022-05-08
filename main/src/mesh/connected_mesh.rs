@@ -340,12 +340,12 @@ mod connected_mesh_tests {
         // D────────────────────────C
 
         let mut positions = Vec::new();
-        positions.push(DVec3::new2d(0., 1.)); // A (0)
-        positions.push(DVec3::new2d(2., 1.)); // B (1)
-        positions.push(DVec3::new2d(2., 0.)); // C (2)
-        positions.push(DVec3::new2d(0., 0.)); // D (3)
-        positions.push(DVec3::new2d(0.25, 0.5)); // E (4)
-        positions.push(DVec3::new2d(1.75, 0.5)); // F (5)
+        positions.push(DVec3::new(0., 1., 0.)); // A (0)
+        positions.push(DVec3::new(2., 1., 0.)); // B (1)
+        positions.push(DVec3::new(2., 0., 0.)); // C (2)
+        positions.push(DVec3::new(0., 0., 0.)); // D (3)
+        positions.push(DVec3::new(0.25, 0.5, 0.)); // E (4)
+        positions.push(DVec3::new(1.75, 0.5, 0.)); // F (5)
 
         let mut nodes = Vec::new();
         // Face AED
