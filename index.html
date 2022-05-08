@@ -1,0 +1,68 @@
+<!--python3 -m http.server-->
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Nanolabo WASM</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans" />
+    <script type="module" src="nanolabo.js"></script>
+    <script src="particles.min.js"></script>
+  </head>
+  <body>
+    <div
+      id="particles-js"
+      style="z-index: -10; width: 150%; height: 150%; position: absolute; top: -25%; left: -25%"
+    ></div>
+
+    <script>
+      particlesJS.load("particles-js", "particles.json", function () {
+        console.log("callback - particles.js config loaded");
+      });
+    </script>
+
+    <h1 style="padding-top: 30px">3D Converter</h1>
+
+    <div class="filler"></div>
+
+    <div class="flex content">
+      <div id="drag-area" class="flex drag-area">
+        <button>Select 3D files to process</button>
+        <p>or drag and drop here</p>
+        <input type="file" hidden multiple />
+      </div>
+
+      <div class="break"></div>
+
+      <p id="selected-files-label"></p>
+
+      <div class="filler"></div>
+
+      <button id="import-button" class="dropdown-button round-left" disabled>Convert to OBJ</button>
+
+      <button id="dropdown-button" class="dropdown-button round-right">
+        <p class="fa fa-caret-down"></p>
+      </button>
+
+      <div class="dropdown-content">
+        <a href="#">Convert to USDZ</a>
+        <a href="#">Convert to FBX</a>
+        <a href="#">Convert to GLTF</a>
+      </div>
+
+      <button id="advanced-button" class="dropdown-button round-all">
+        <p class="fa fa-gear"></p>
+      </button>
+    </div>
+    <div class="filler"></div>
+    <div class="flex">
+      <p style="padding: 10px">Technology</p>
+      <p style="padding: 10px">Privacy</p>
+    </div>
+    <div class="flex" style="padding-bottom: 14px">
+      <img width="32" height="32" style="margin-right: 10px" srcset="logo_white_2x.png 2x" src="logo_white.png" />
+      <h3>nanolabo</h3>
+    </div>
+  </body>
+</html>
