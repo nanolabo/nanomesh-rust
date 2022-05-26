@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::convert::TryInto;
 
+use cdt::CustomPt2D;
 use nalgebra_glm as glm;
 use glm::{DVec3, DVec4, DMat4, U32Vec3};
 use log::{info, warn, error};
@@ -381,6 +382,9 @@ fn advanced_face(s: &StepFile, f: AdvancedFace, mesh: &mut SharedMesh,
     let mut edges = Vec::new();
     let v_start = mesh.positions.len();
     let mut num_pts = 0;
+
+    let mut lowered_contour_verts = Vec::new();
+
     for b in &face.bounds {
         let bound_contours = face_bound(s, *b)?;
 
@@ -394,9 +398,11 @@ fn advanced_face(s: &StepFile, f: AdvancedFace, mesh: &mut SharedMesh,
             1 => {
                 num_pts += 1;
 
-                mesh.positions.push(bound_contours[0]);
-                mesh.normals.as_mut().expect("no normals").push(DVec3::zeros());
-                mesh.colors.as_mut().expect("no colors").push(DVec3::zeros());
+                let proj = surf.lower(bound_contours[0]).unwrap();
+                lowered_contour_verts.push(CustomPt2D { x: proj.x, y: proj.y, index: Some(bound_contours[0]) });
+                // mesh.positions.push(bound_contours[0]);
+                // mesh.normals.as_mut().expect("no normals").push(DVec3::zeros());
+                // mesh.colors.as_mut().expect("no colors").push(DVec3::zeros());
             },
 
             // Default for lists of contour points
@@ -408,9 +414,11 @@ fn advanced_face(s: &StepFile, f: AdvancedFace, mesh: &mut SharedMesh,
                     edges.push((num_pts, num_pts + 1));
 
                     // Also store this vertex in the 3D triangulation
-                    mesh.positions.push(pt);
-                    mesh.normals.as_mut().expect("no normals").push(DVec3::zeros());
-                    mesh.colors.as_mut().expect("no colors").push(DVec3::zeros());
+                    let proj = surf.lower(pt).unwrap();
+                    lowered_contour_verts.push(CustomPt2D { x: proj.x, y: proj.y, index: Some(pt) });
+                    // mesh.positions.push(pt);
+                    // mesh.normals.as_mut().expect("no normals").push(DVec3::zeros());
+                    // mesh.colors.as_mut().expect("no colors").push(DVec3::zeros());
 
                     num_pts += 1;
                 }
@@ -418,7 +426,8 @@ fn advanced_face(s: &StepFile, f: AdvancedFace, mesh: &mut SharedMesh,
                 // contours, so we skip it here and reattach the contour to
                 // the start.
                 num_pts -= 1;
-                mesh.positions.pop();
+                lowered_contour_verts.pop();
+                //mesh.positions.pop();
 
                 // Close the loop by returning to the starting point
                 edges.pop();
@@ -427,14 +436,97 @@ fn advanced_face(s: &StepFile, f: AdvancedFace, mesh: &mut SharedMesh,
         }
     }
 
-    // We inject Stiner points based on the surface type to improve curvature,
+    // Triangulation workflow:
+    // 1- Get the boundaries curves
+    // 2- Discretize boundaries
+    // 3- Lower boundaries to uv-space
+    // 4- Compute a delaunay triangulation from bounds
+    // 5- If we can raise back on surface, add points to triangulation
+    //   5.1- Points to add can be done using delauney refinement with circumcenters
+    // 6- Build 3D mesh for this surface
+
+    // We inject Steiner points based on the surface type to improve curvature,
     // e.g. for spherical sections.  However, we don't want triagulation to
     // _fail_ due to these points, so if that happens, we nuke the point (by
     // assigning it to the first point in the list, which causes it to get
     // deduplicated), then retry.
-    let mut pts = surf.lower_verts(&mut mesh.positions[v_start..], &mut mesh.normals.as_mut().expect("no normals")[v_start..])?;
-    let bonus_points = pts.len();
+    //let mut pts = surf.lower_verts(&mut mesh.positions[v_start..], &mut mesh.normals.as_mut().expect("no normals")[v_start..])?;
+    //let bonus_points = pts.len();
+    
+    use cdt::spade::Triangulation;
+    use glm::DVec2;
+
+    warn!("Try triangulate with spade");
+
+    match cdt::triangulate_spade2(lowered_contour_verts, edges) {
+        Ok(triangulation) => {
+            warn!("Success triangulate with spade");
+
+            let mut handle_to_index = std::collections::HashMap::<>::new();
+        
+            for face in triangulation.inner_faces() {
+                // face is a FaceHandle
+                // edges is an array containing 3 directed edge handles
+                let edges = face.adjacent_edges();
+                for edge in &edges {
+                    let from = edge.from();
+                    let to = edge.to();
+                    // from and to are vertex handles
+                    println!("found an edge: {:?} -> {:?}", from, to);
+                }
+        
+                let vertices = face.vertices();
+                let mut indices: [usize; 3] = [0; 3];
+                let mut i = 0;
+                for vertex in &vertices {
+                    let v = vertex.clone();
+                    if !handle_to_index.contains_key(&vertex.clone()) {
+                        handle_to_index.insert(v, handle_to_index.len());
+                        
+                        let data = v.data();
+                        let p3d = match data.index {
+                            Some(pt3d) => {
+                                pt3d
+                            },
+                            None => {
+                                let p = v.position();
+                                surf.raise(DVec2::new(p.x, p.y)).unwrap()
+                            },
+                        };
+        
+                        mesh.positions.push(p3d);
+                        mesh.normals.as_mut().expect("no normals").push(DVec3::zeros());
+                        mesh.colors.as_mut().expect("no colors").push(DVec3::zeros());
+                    }
+                    
+                    indices[i] = *handle_to_index.get(vertex).unwrap();
+                    i += 1;
+                }
+        
+                let a = (indices[0] + offset) as u32;
+                let b = (indices[1] + offset) as u32;
+                let c = (indices[2] + offset) as u32;
+        
+                mesh.triangles.push(
+                    U32Vec3::new(a, b, c)
+                    // if face.same_sense {
+                    //     U32Vec3::new(a, b, c)
+                    // } else {
+                    //     U32Vec3::new(a, c, b)
+                    // }
+                );
+            }
+        },
+        Err(()) => {
+
+        }
+    }
+
+ 
+
+    /*
     surf.add_steiner_points(&mut pts, &mut mesh.positions, &mut mesh.normals.as_mut().expect("no normals"), &mut mesh.colors.as_mut().expect("no colors"));
+    
     let result = std::panic::catch_unwind(|| {
         // TODO: this is only needed because we use pts below to save a debug
         // SVG if this panics.  Once we're confident in never panicking, we
@@ -456,6 +548,7 @@ fn advanced_face(s: &StepFile, f: AdvancedFace, mesh: &mut SharedMesh,
                 },
                 Err(e) => {
                     if SAVE_DEBUG_SVGS {
+                        error!("Triangulation panic, saving debug svg...");
                         let filename = format!("err{}.svg", face.face_geometry.0);
                         t.save_debug_svg(&filename)
                             .expect("Could not save debug SVG");
@@ -503,6 +596,8 @@ fn advanced_face(s: &StepFile, f: AdvancedFace, mesh: &mut SharedMesh,
             normals[i] = -normals[i];
         }
     }
+    */
+
     Ok(())
 }
 
@@ -686,6 +781,7 @@ fn edge_curve(s: &StepFile, e: EdgeCurve, orientation: bool) -> Result<Vec<DVec3
     Ok(curve.build(u, v))
 }
 
+// Converts a STEP curve entity to a curve object (format agnostic)
 fn curve(s: &StepFile, edge_curve: &ap214::EdgeCurve_,
          curve_id: ap214::Curve, orientation: bool) -> Result<Curve, Error>
 {

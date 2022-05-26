@@ -124,7 +124,7 @@ impl Surface {
     /// Lowers a 3D point on a specific surface into a 2D space defined by
     /// the surface type.  This should only be called from `lower_verts`,
     /// to ensure that `prepare` is called first.
-    fn lower(&self, p: DVec3) -> Result<DVec2, Error> {
+    pub fn lower(&self, p: DVec3) -> Result<DVec2, Error> {
         let p_ = DVec4::new(p.x, p.y, p.z, 1.0);
         match self {
             Surface::Plane { mat_i, .. } => {
@@ -336,9 +336,9 @@ impl Surface {
     {
         let (xmin, xmax, ymin, ymax) = Self::bbox(&pts);
         let num_pts = match self {
-            Surface::Sphere { .. }   => 6,
+            Surface::Sphere { .. } => 6,
             Surface::Torus { .. } => 32,
-            //Surface::BSpline { .. } => 32,
+            Surface::NURBS { .. } => 32,
             _ => 0,
         };
 
@@ -350,6 +350,8 @@ impl Surface {
             for y in 0..num_pts {
                 let y_frac = (y as f64 + 1.0) / (num_pts as f64 + 1.0);
                 let v = y_frac * ymax + (1.0 - y_frac) * ymin;
+
+                log::warn!("steiner on u={}, v={}", u, v);
 
                 let uv = DVec2::new(u, v);
                 if let Some(pos) = self.raise(uv) {

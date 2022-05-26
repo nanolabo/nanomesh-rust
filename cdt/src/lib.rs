@@ -45,6 +45,8 @@ pub(crate) mod half;
 pub(crate) mod hull;
 pub(crate) mod indexes;
 pub(crate) mod triangulate;
+use nalgebra_glm::DVec3;
+pub use spade;
 pub use triangulate::Triangulation;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -102,6 +104,66 @@ pub enum Error {
 
 ////////////////////////////////////////////////////////////////////////////////
 // User-friendly exported functions
+
+use spade::{ConstrainedDelaunayTriangulation, Point2, HasPosition};
+
+pub fn triangulate_spade(points: Vec<(f64, f64)>, constrains: Vec<(i32, i32)>) -> ConstrainedDelaunayTriangulation::<Point2<f64>> {
+
+    use spade::{Triangulation};
+
+    let mut cdt = ConstrainedDelaunayTriangulation::<Point2<_>>::new();
+    let mut pts_handles = Vec::new();
+    for point in points {
+      let v = cdt.insert(Point2::new(point.0, point.1)).unwrap();
+      pts_handles.push(v);
+    }
+    for constrain in constrains {
+        if cdt.can_add_constraint(pts_handles[constrain.0 as usize], pts_handles[constrain.1 as usize]){
+            cdt.add_constraint(pts_handles[constrain.0 as usize], pts_handles[constrain.1 as usize]);
+        }
+    }
+    return cdt;
+}
+
+pub struct CustomPt2D {
+    pub x: f64,
+    pub y: f64,
+    pub index: Option<DVec3>,
+}
+
+impl HasPosition for CustomPt2D {
+    type Scalar = f64;
+
+    fn position(&self) -> Point2<Self::Scalar> {
+        Point2::new(self.x, self.y)
+    }
+}
+
+pub fn triangulate_spade2(points: Vec<CustomPt2D>, constrains: Vec<(i32, i32)>) -> Result<ConstrainedDelaunayTriangulation::<CustomPt2D>,()> {
+
+    use spade::{Triangulation};
+
+    let mut cdt = ConstrainedDelaunayTriangulation::<CustomPt2D>::new();
+    let mut pts_handles = Vec::new();
+    for point in points {
+
+        if point.x.is_nan() {
+            return Err(());
+        }
+        if point.y.is_nan() {
+            return Err(());
+        }
+        
+        let v = cdt.insert(point).unwrap();
+        pts_handles.push(v);
+    }
+    for constrain in constrains {
+        if cdt.can_add_constraint(pts_handles[constrain.0 as usize], pts_handles[constrain.1 as usize]){
+            cdt.add_constraint(pts_handles[constrain.0 as usize], pts_handles[constrain.1 as usize]);
+        }
+    }
+    return Ok(cdt);
+}
 
 /// Triangulates a set of points, returning triangles as triples of indexes
 /// into the original points list.  The resulting triangulation has a convex

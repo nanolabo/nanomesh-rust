@@ -59,8 +59,21 @@ pub fn write<T: Write>(shared_mesh: &SharedMesh, writer: &mut BufWriter<T>) {
         write!("v {} {} {}", shared_mesh.positions[i].x, shared_mesh.positions[i].y, shared_mesh.positions[i].z);
     }
 
-    for i in 0..shared_mesh.triangles.len() {
-        let triangle = shared_mesh.triangles[i];
-        write!("f {} {} {}", triangle[0] + 1, triangle[1] + 1, triangle[2] + 1);
-    }
+    match &shared_mesh.normals {
+        Some(normals) => {
+            for i in 0..normals.len() {
+                write!("vn {} {} {}", normals[i].x, normals[i].y, normals[i].z);
+            }
+            for i in 0..shared_mesh.triangles.len() {
+                let triangle = shared_mesh.triangles[i];
+                write!("f {}//{} {}//{} {}//{}", triangle[0] + 1, triangle[1] + 1, triangle[2] + 1, triangle[0] + 1, triangle[1] + 1, triangle[2] + 1 );
+            }
+        },
+        None => {
+            for i in 0..shared_mesh.triangles.len() {
+                let triangle = shared_mesh.triangles[i];
+                write!("f {} {} {}", triangle[0] + 1, triangle[1] + 1, triangle[2] + 1);
+            }
+        }
+    };
 }

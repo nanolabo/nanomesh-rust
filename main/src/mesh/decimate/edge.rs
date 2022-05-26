@@ -3,8 +3,8 @@ use std::hash::Hasher;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Edge {
-    pos_a: u32,
-    pos_b: u32,
+    pub pos_a: u32,
+    pub pos_b: u32,
 }
 
 impl Eq for Edge {
@@ -26,7 +26,7 @@ impl Hash for Edge {
 }
 
 impl Edge {
-    fn new(pos_a: u32, pos_b: u32) -> Self {
+    pub fn new(pos_a: u32, pos_b: u32) -> Self {
         Self {
             pos_a: pos_a,
             pos_b: pos_b,

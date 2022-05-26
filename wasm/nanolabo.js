@@ -1,5 +1,10 @@
 import init, { setup_logging, Parameters, read_obj } from "./pkg/nanolabo_wasm.js";
 
+String.prototype.rsplit = function (sep, maxsplit) {
+  var split = this.split(sep);
+  return maxsplit ? [split.slice(0, -maxsplit).join(sep)].concat(split.slice(-maxsplit)) : split;
+};
+
 function readFile(file) {
   return new Promise((resolve, reject) => {
     // Create file reader
@@ -33,7 +38,10 @@ async function handleFile(file) {
   var blob = new Blob([result], { type: "application/pdf" }); // change resultByte to bytes
   var link = document.createElement("a");
   link.href = window.URL.createObjectURL(blob);
-  link.download = "output.obj";
+
+  const fname = file.name.rsplit(".", 1)[0];
+
+  link.download = fname + ".obj";
   link.click();
 }
 
