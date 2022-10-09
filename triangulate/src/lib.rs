@@ -26,3 +26,14 @@ pub enum Error {
     #[error("Self-intersecting NURBS and b-spline curves are not implemented")]
     SelfIntersectingCurve,
 }
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+mod triangulate_tests {
+    use super::*;
+
+    #[test]
+    fn dummy_test() {
+        assert_eq!(1, 1); 
+    }
+}
