@@ -66,7 +66,7 @@ pub fn write<T: Write>(shared_mesh: &SharedMesh, writer: &mut BufWriter<T>) {
             }
             for i in 0..shared_mesh.triangles.len() {
                 let triangle = shared_mesh.triangles[i];
-                write!("f {}//{} {}//{} {}//{}", triangle[0] + 1, triangle[1] + 1, triangle[2] + 1, triangle[0] + 1, triangle[1] + 1, triangle[2] + 1 );
+                write!("f {}//{} {}//{} {}//{}", triangle[0] + 1, triangle[0] + 1, triangle[1] + 1, triangle[1] + 1, triangle[2] + 1, triangle[2] + 1);
             }
         },
         None => {

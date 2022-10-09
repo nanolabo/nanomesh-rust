@@ -289,6 +289,25 @@ impl ConnectedMesh {
         let pos_c = &self.positions[node_c.position as usize];
         (&(pos_b - pos_a).cross(&(pos_c - pos_a))).normalize()
     }
+
+    fn split_edge(&self, node_index_a: u32, node_index_b: u32) {
+        let pos_b = self.nodes[node_index_b as usize].position;
+        loop_siblings!(node_index_a, self.nodes, sibling_of_a, {
+            if !self.nodes[sibling_of_a as usize].is_removed {
+                // Maybe we should begin directly with relative?
+                loop_relatives!(sibling_of_a, self.nodes, relative_of_a, {
+                    let pos_c = self.nodes[relative_of_a as usize].position;
+                    if pos_c == pos_b {
+
+                        // This triangle shares the given edge
+
+                        
+                        
+                    }
+                });
+            }
+        });
+    }
 }
 
 include!("decimate/decimate.rs");
