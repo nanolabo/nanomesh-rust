@@ -2,6 +2,7 @@
 // cargo run --example step_to_obj models/sphere.step
 // cargo run --example step_to_obj models/weird-tube.step
 // cargo run --example step_to_obj models/klein-bottle.step
+// cargo run --example step_to_obj models/cylinder-with-holes.step
 
 use clap::{Arg, App};
 

@@ -338,7 +338,8 @@ impl Surface {
         let num_pts = match self {
             Surface::Sphere { .. }   => 6,
             Surface::Torus { .. } => 32,
-            //Surface::BSpline { .. } => 32,
+            Surface::BSpline { .. } => 32,
+            Surface::NURBS { .. } => 32,
             _ => 0,
         };
 

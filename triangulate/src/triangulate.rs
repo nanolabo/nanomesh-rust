@@ -616,7 +616,7 @@ fn get_surface(s: &StepFile, surf: ap214::Surface) -> Result<Surface, Error> {
 
         },
         e => {
-            warn!("Could not get surface from {:?}", e);
+            error!("Could not get surface from {:?}", e);
             Err(Error::UnknownSurfaceType)
         },
     }
@@ -686,6 +686,7 @@ fn edge_curve(s: &StepFile, e: EdgeCurve, orientation: bool) -> Result<Vec<DVec3
     Ok(curve.build(u, v))
 }
 
+// Here
 fn curve(s: &StepFile, edge_curve: &ap214::EdgeCurve_,
          curve_id: ap214::Curve, orientation: bool) -> Result<Curve, Error>
 {
