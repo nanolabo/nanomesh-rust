@@ -1,7 +1,7 @@
 use std::fmt::*;
 
-type U32Map = HashMap::<u32, u32, BuildHasherDefault<SimpleHasher>>;
-type U32Set = HashSet::<u32, BuildHasherDefault<SimpleHasher>>;
+type U32Map = HashMap::<u32, u32>;
+type U32Set = HashSet::<u32>;
 
 pub struct ConnectedMesh {
     nodes: Vec<Node>,

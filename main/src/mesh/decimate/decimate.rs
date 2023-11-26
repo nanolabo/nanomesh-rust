@@ -34,10 +34,10 @@ impl ConnectedMesh {
         }
 
         let mut queue = PriorityQueue::<Edge, CollapseContext, _>::with_hasher(BuildHasherDefault::<SimpleHasher>::default());
-        let mut position_to_node = U32Map::with_hasher(BuildHasherDefault::<SimpleHasher>::default());
+        let mut position_to_node = U32Map::new();
         let mut quadrics = vec![SymmetricMatrix::default_uninitalized(); self.positions.len()];
 
-        let mut pool = Pool::with_capacity(20, 0, || U32Set::with_hasher(BuildHasherDefault::<SimpleHasher>::default()) /* SetU32::new() */);
+        let mut pool = Pool::with_capacity(20, 0, || U32Set::new() /* SetU32::new() */);
 
         for i in 0..self.nodes.len() {
             if self.nodes[i].is_removed {

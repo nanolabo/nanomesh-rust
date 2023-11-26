@@ -11,9 +11,9 @@ path = "src/lib.rs"
 [features]
 interop = []
 
-# [[example]]
-# name = "decimate"
-# path = "samples/decimate.rs"
+[[example]]
+name = "decimate"
+path = "samples/decimate.rs"
 
 [dependencies]
 nanomesh_macros = { path = "../macros" }
