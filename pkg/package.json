@@ -1,5 +1,6 @@
 {
   "name": "nanolabo_wasm",
+  "type": "module",
   "collaborators": [
     "Olivier Giniaux <oginiaux@gmail.com>"
   ],
@@ -9,7 +10,9 @@
     "nanolabo_wasm.js",
     "nanolabo_wasm.d.ts"
   ],
-  "module": "nanolabo_wasm.js",
+  "main": "nanolabo_wasm.js",
   "types": "nanolabo_wasm.d.ts",
-  "sideEffects": false
+  "sideEffects": [
+    "./snippets/*"
+  ]
 }
