@@ -6,10 +6,11 @@ impl From<&SharedMesh> for ConnectedMesh {
             BuildHasherDefault::<SimpleHasher>::default()
         );
         let mut face_count = 0;
-        for i in 0..triangles.len() {
-            let triangle = triangles[i];
+        for tri_idx in 0..triangles.len() {
+            let triangle = triangles[tri_idx];
+            let i = tri_idx * 3;
             {
-                let mut a = &mut nodes[i];
+                let a = &mut nodes[i];
                 a.position = triangle[0];
                 a.normal = triangle[0];
                 a.relative = (i as u32) + 1; // B
@@ -19,17 +20,17 @@ impl From<&SharedMesh> for ConnectedMesh {
                 vertex_to_nodes.get_mut(&a.position).unwrap().push(i as u32);
             }
             {
-                let mut b = &mut nodes[i + 1];
+                let b = &mut nodes[i + 1];
                 b.position = triangle[1];
                 b.normal = triangle[1];
                 b.relative = (i as u32) + 2; // C
                 if !vertex_to_nodes.contains_key(&b.position) {
                     vertex_to_nodes.insert(b.position, Vec::new());
-                }  
+                }
                 vertex_to_nodes.get_mut(&b.position).unwrap().push((i as u32) + 1);
             }
             {
-                let mut c = &mut nodes[i + 2];
+                let c = &mut nodes[i + 2];
                 c.position = triangle[2];
                 c.normal = triangle[2];
                 c.relative = i as u32; // A
@@ -146,8 +147,6 @@ mod builder_tests {
 
     #[test]
     fn shared_mesh_to_connected_mesh() {
-        
-        return; // todo: Fix this 
 
         let mut positions = Vec::new();
         // Build a square
