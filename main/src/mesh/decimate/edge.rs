@@ -20,8 +20,12 @@ impl PartialEq for Edge {
 
 impl Hash for Edge {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        let hash: u64 = ((self.pos_a + self.pos_b) as u64) << 32 | (((self.pos_a as i32) - (self.pos_b as i32)).abs() as u64);
-        hash.hash(state);
+        let (lo, hi) = if self.pos_a < self.pos_b {
+            (self.pos_a, self.pos_b)
+        } else {
+            (self.pos_b, self.pos_a)
+        };
+        (((hi as u64) << 32) | (lo as u64)).hash(state);
     }
 }
 

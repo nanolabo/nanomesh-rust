@@ -23,12 +23,7 @@ impl PartialOrd for CollapseContext {
 
 impl Ord for CollapseContext {
     fn cmp(&self, other: &Self) -> Ordering {
-        if self.error > other.error {
-            return Ordering::Greater;
-        } else if self.error < other.error {
-            return Ordering::Less;
-        }
-        Ordering::Equal
+        self.error.total_cmp(&other.error)
     }
 }
 

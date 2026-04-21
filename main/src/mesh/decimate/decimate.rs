@@ -84,24 +84,20 @@ impl ConnectedMesh {
             let edge_to_collapse = pair_to_collapse.0;
             let collapse_context = pair_to_collapse.1;
 
-            match position_to_node.get(&edge_to_collapse.pos_a) {
-                Some(_) => (),
-                None => continue
+            let node_a_index = match position_to_node.get(&edge_to_collapse.pos_a) {
+                Some(&idx) => idx,
+                None => continue,
+            };
+            let node_b_index = match position_to_node.get(&edge_to_collapse.pos_b) {
+                Some(&idx) => idx,
+                None => continue,
             };
 
-            match position_to_node.get(&edge_to_collapse.pos_b) {
-                Some(_) => (),
-                None => continue
-            };
-        
             // Collapse edge
-            let valid_node_index_o = self.collapse_edge_to_a(*position_to_node.get(&edge_to_collapse.pos_a).unwrap(), *position_to_node.get(&edge_to_collapse.pos_b).unwrap(), &mut Some(&mut position_to_node));
-
-            if valid_node_index_o.is_none() {
-                continue;
-            }
-
-            let valid_node_index = valid_node_index_o.unwrap();
+            let valid_node_index = match self.collapse_edge_to_a(node_a_index, node_b_index, &mut Some(&mut position_to_node)) {
+                Some(idx) => idx,
+                None => continue,
+            };
 
             // Use optimal position
             self.positions[self.nodes[valid_node_index as usize].position as usize] = collapse_context.collapse_to;
@@ -115,22 +111,19 @@ impl ConnectedMesh {
 
             loop_edges!(valid_node_index, positions, self.nodes, relative, {
                 let node_c = self.nodes[relative as usize];
-                let edge = &Edge::new(node_a.position, node_c.position);
-                // Recompute quadric
+                // Recompute quadric at C (once per unique neighbour position, thanks to the dedup in loop_edges)
                 calculate_quadric(self, &mut quadrics, node_c.sibling);
-                // Refresh edge in queue (new collapse target position)
-                let mut collapse_context = CollapseContext::default();
-                queue.push(*edge, collapse_context);
-                calculate_weight(self, &position_to_node, edge, &mut collapse_context);
             });
 
+            let mut error_buffer = pool.checkout().unwrap();
             for position in positions.iter() {
                 debug_assert!(node_a.position != *position);
-                let edge = &Edge::new(node_a.position, *position);
-                // Refresh edge in queue (new collapse target position)
-                let mut collapse_context = *queue.get(&edge).unwrap().1;
-                calculate_error(self, &mut quadrics, &queue, &position_to_node, &mut pool.checkout().unwrap(), edge, &mut collapse_context);
-                queue.change_priority(edge, collapse_context);
+                let edge = Edge::new(node_a.position, *position);
+                // Refresh edge in queue with both weight and error in a single push
+                let mut collapse_context = CollapseContext::default();
+                calculate_weight(self, &position_to_node, &edge, &mut collapse_context);
+                calculate_error(self, &mut quadrics, &queue, &position_to_node, &mut error_buffer, &edge, &mut collapse_context);
+                queue.push(edge, collapse_context);
             }
         }
 
