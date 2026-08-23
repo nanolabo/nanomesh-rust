@@ -15,6 +15,14 @@ interop = []
 name = "decimate"
 path = "samples/decimate.rs"
 
+[[example]]
+name = "quality_bench"
+path = "samples/quality_bench.rs"
+
+[dev-dependencies]
+# used only by the quality_bench example to embed screenshots in its report
+png = "0.17"
+
 [dependencies]
 nanomesh_macros = { path = "../macros" }
 nalgebra-glm = "0.13.0"
