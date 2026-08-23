@@ -127,20 +127,58 @@ impl ConnectedMesh {
             }
         }
 
+        // Penalty applied to boundary constraint planes. Moving a vertex off a
+        // boundary edge by distance e costs BOUNDARY_WEIGHT * e², versus e² for
+        // a regular face plane, so open rims strongly resist erosion while
+        // collapses along a straight boundary stay free.
+        const BOUNDARY_WEIGHT: f64 = 100.0;
+
         fn calculate_quadric(connected_mesh: &mut ConnectedMesh, quadrics: &mut Vec<SymmetricMatrix>, node_index: u32)
         {
             let mut matrix = SymmetricMatrix::default_zeroes();
 
+            // Edges incident to this vertex: (neighbor position, faces seen, normal of one adjacent face)
+            let mut incident_edges: Vec<(u32, u32, DVec3)> = Vec::with_capacity(8);
+
             loop_siblings!(node_index, connected_mesh.nodes, sibling, {
-                let face_normal = &connected_mesh.get_face_normal(sibling);
+                let face_normal = connected_mesh.get_face_normal(sibling);
                 let position = &connected_mesh.positions[connected_mesh.nodes[sibling as usize].position as usize];
                 let dot = &-face_normal.dot(position);
-                matrix += SymmetricMatrix::from_normal(face_normal, &dot);
+                matrix += SymmetricMatrix::from_normal(&face_normal, &dot);
+
+                // Record the two face edges touching this vertex for boundary detection
+                let relative_1 = connected_mesh.nodes[sibling as usize].relative;
+                let relative_2 = connected_mesh.nodes[relative_1 as usize].relative;
+                for &neighbor_pos in &[connected_mesh.nodes[relative_1 as usize].position, connected_mesh.nodes[relative_2 as usize].position] {
+                    match incident_edges.iter_mut().find(|e| e.0 == neighbor_pos) {
+                        Some(e) => e.1 += 1,
+                        None => incident_edges.push((neighbor_pos, 1, face_normal)),
+                    }
+                }
             });
+
+            // Boundary constraint (Garland & Heckbert): for each edge with a single
+            // adjacent face, add a heavily weighted plane through the edge,
+            // perpendicular to that face
+            let vertex_pos = connected_mesh.positions[connected_mesh.nodes[node_index as usize].position as usize];
+            for &(neighbor_pos, face_count, face_normal) in &incident_edges {
+                if face_count != 1 {
+                    continue;
+                }
+                let edge_dir = connected_mesh.positions[neighbor_pos as usize] - vertex_pos;
+                let constraint_normal = edge_dir.cross(&face_normal);
+                let len = constraint_normal.magnitude();
+                if len < 1e-30 {
+                    continue;
+                }
+                let scaled_normal = constraint_normal / len * BOUNDARY_WEIGHT.sqrt();
+                let dot = -scaled_normal.dot(&vertex_pos);
+                matrix += SymmetricMatrix::from_normal(&scaled_normal, &dot);
+            }
+
             quadrics[connected_mesh.nodes[node_index as usize].position as usize] = matrix;
 
             // TODO: Take surface area into consideration
-            // TODO: "For each face adjacent to a given boundary edge, we compute a plane through the edge that is perpendicular to the face"
         }
 
         fn calculate_weight(connected_mesh: &ConnectedMesh, position_to_node: &U32Map, edge: &Edge, collapse_context: &mut CollapseContext)
